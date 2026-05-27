@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POKÉDEX — Digital Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: #0e0e1c;
+      --surface-2: #15152a;
+      --text: #e2e2f0;
+      --muted: #5a5a7a;
+      --border: rgba(255,255,255,0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 40% at 50% -10%, rgba(112,56,248,.18) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 90%, rgba(248,88,136,.1) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(104,144,240,.08) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(7,7,15,.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+      letter-spacing: .12em;
+      background: linear-gradient(130deg, #7038F8 0%, #F85888 50%, #F8D030 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .logo em { font-style: normal; font-weight: 400; opacity: .55; }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 180px;
+      max-width: 380px;
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    #search {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: .6rem 1rem .6rem 2.6rem;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .95rem;
+      font-weight: 500;
+      letter-spacing: .05em;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    #search::placeholder { color: var(--muted); }
+
+    #search:focus {
+      border-color: rgba(112,56,248,.5);
+      box-shadow: 0 0 0 3px rgba(112,56,248,.1);
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-left: auto;
+    }
+
+    .battle-link {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .5rem 1.1rem;
+      border-radius: 50px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+
+    .battle-link:hover {
+      border-color: rgba(248,88,136,.5);
+      color: #F85888;
+      box-shadow: 0 0 14px rgba(248,88,136,.15);
+    }
+
+    #random-btn {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      background: linear-gradient(130deg, rgba(112,56,248,.2), rgba(248,88,136,.2));
+      border: 1px solid rgba(112,56,248,.35);
+      color: var(--text);
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .5rem 1.1rem;
+      border-radius: 50px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+
+    #random-btn:hover:not(:disabled) {
+      background: linear-gradient(130deg, rgba(112,56,248,.35), rgba(248,88,136,.35));
+      border-color: rgba(112,56,248,.6);
+      box-shadow: 0 0 18px rgba(112,56,248,.25);
+    }
+
+    #random-btn:active:not(:disabled) {
+      transform: scale(.96);
+    }
+
+    #random-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    #random-btn svg { flex-shrink: 0; }
+
+    #count-badge {
+      font-family: 'Orbitron', monospace;
+      font-size: .65rem;
+      letter-spacing: .15em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ── MAIN ───────────────────────────────────────── */
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 2.5rem;
+    }
+
+    .hero h1 {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(2rem, 6vw, 4.5rem);
+      line-height: .95;
+      letter-spacing: -.01em;
+      margin-bottom: .75rem;
+    }
+
+    .hero h1 span {
+      display: block;
+      background: linear-gradient(130deg, #7038F8, #F85888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: .05em;
+      max-width: 420px;
+    }
+
+    /* ── TYPE FILTERS ───────────────────────────────── */
+    .filters-wrap {
+      margin-bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+    }
+
+    .filters-label {
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .filters {
+      display: flex;
+      gap: .45rem;
+      flex-wrap: wrap;
+    }
+
+    .type-btn {
+      padding: .3rem .85rem;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .18s;
+    }
+
+    .type-btn:hover { color: var(--text); }
+    .type-btn.active { color: #fff; }
+
+    /* ── GRID ───────────────────────────────────────── */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 1rem;
+    }
+
+    /* ── POKEMON CARD ───────────────────────────────── */
+    .poke-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.4rem 1rem 1rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(16px);
+      transition:
+        transform .28s cubic-bezier(.34,1.56,.64,1),
+        box-shadow .28s ease,
+        border-color .28s ease,
+        opacity .3s ease;
+    }
+
+    .poke-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Type-colored radial glow on hover */
+    .poke-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% -10%, var(--c, rgba(112,56,248,.12)) 0%, transparent 65%);
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+
+    .poke-card:hover {
+      transform: translateY(-7px) scale(1.025);
+      border-color: var(--c-dim, rgba(112,56,248,.35));
+      box-shadow: 0 22px 50px rgba(0,0,0,.45), 0 0 28px var(--c-glow, rgba(112,56,248,.14));
+    }
+
+    .poke-card:hover::after { opacity: 1; }
+
+    /* Pokéball watermark */
+    .poke-card::before {
+      content: '';
+      position: absolute;
+      right: -20px;
+      bottom: -20px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 20px solid rgba(255,255,255,.025);
+      pointer-events: none;
+    }
+
+    .poke-num {
+      font-family: 'Orbitron', monospace;
+      font-size: .58rem;
+      letter-spacing: .18em;
+      color: var(--muted);
+      align-self: flex-start;
+      margin-bottom: .5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .poke-img-wrap {
+      width: 108px;
+      height: 108px;
+      position: relative;
+      margin: 0 auto .8rem;
+      z-index: 1;
+    }
+
+    .poke-img-halo {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, var(--c, rgba(112,56,248,.2)) 0%, transparent 70%);
+      opacity: .6;
+      transition: opacity .3s, transform .3s;
+    }
+
+    .poke-card:hover .poke-img-halo {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
+    .poke-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 4px 10px var(--c-glow, rgba(112,56,248,.25)));
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    .poke-card:hover .poke-img {
+      transform: scale(1.12) translateY(-3px);
+    }
+
+    .poke-name {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .types {
+      display: flex;
+      gap: .35rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .type-tag {
+      padding: .18rem .55rem;
+      border-radius: 50px;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* ── SKELETON ───────────────────────────────────── */
+    .skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.4rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .skel {
+      background: linear-gradient(90deg, var(--surface-2) 25%, rgba(255,255,255,.04) 50%, var(--surface-2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── EMPTY STATE ────────────────────────────────── */
+    .empty {
+      grid-column: 1 / -1;
+      padding: 5rem 2rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty svg { margin-bottom: 1rem; opacity: .3; }
+
+    .empty p {
+      font-family: 'Orbitron', monospace;
+      font-size: .8rem;
+      letter-spacing: .15em;
+    }
+
+    /* ── LOAD MORE ──────────────────────────────────── */
+    .load-wrap {
+      margin-top: 2.5rem;
+      text-align: center;
+    }
+
+    #load-more {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .68rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      padding: .85rem 2.5rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    #load-more:hover:not(:disabled) {
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.22);
+      color: var(--text);
+    }
+
+    #load-more:disabled { opacity: .35; cursor: not-allowed; }
+
+    /* ── MODAL ──────────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .25s, visibility .25s;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      width: 100%;
+      max-width: 816px;
+      max-height: 90vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transform: translateY(24px) scale(.96);
+      transition: transform .32s cubic-bezier(.34,1.56,.64,1);
+      position: relative;
+    }
+
+    .overlay.open .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    /* Modal top band */
+    .modal-band {
+      position: relative;
+      padding: 2rem 2rem 1.5rem;
+      overflow: hidden;
+      min-height: 216px;
+    }
+
+    .modal-band-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 80% 30%, var(--mc, rgba(112,56,248,.25)) 0%, transparent 65%);
+    }
+
+    .modal-band-circle {
+      position: absolute;
+      right: -30px;
+      top: -30px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.04);
+    }
+
+    .shiny-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      margin-top: .75rem;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 50px;
+      padding: .3rem .85rem;
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .58rem;
+      letter-spacing: .12em;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      z-index: 2;
+    }
+
+    .shiny-toggle:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+
+    .shiny-toggle.on {
+      background: rgba(250,204,21,.12);
+      border-color: rgba(250,204,21,.45);
+      color: #facc15;
+    }
+
+    .modal-sprite {
+      position: absolute;
+      right: 1.5rem;
+      bottom: -1rem;
+      width: 204px;
+      height: 204px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 30px var(--mg, rgba(112,56,248,.45)));
+      z-index: 2;
+      transition: opacity .2s, filter .3s;
+    }
+
+    .modal-num {
+      font-family: 'Orbitron', monospace;
+      font-size: .65rem;
+      letter-spacing: .22em;
+      color: rgba(255,255,255,.4);
+      margin-bottom: .4rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .modal-name {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 2.6rem);
+      line-height: 1;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      margin-bottom: .9rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .modal-types {
+      display: flex;
+      gap: .4rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Modal body */
+    .modal-body {
+      padding: 2rem 2rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 520px) {
+      .modal-body { grid-template-columns: 1fr; }
+      .modal-sprite { width: 144px; height: 144px; right: 1rem; }
+    }
+
+    .modal-section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: .58rem;
+      letter-spacing: .22em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: .9rem;
+    }
+
+    /* Stats */
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      margin-bottom: .55rem;
+    }
+
+    .stat-name {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      width: 52px;
+      flex-shrink: 0;
+    }
+
+    .stat-val {
+      font-family: 'Orbitron', monospace;
+      font-size: .75rem;
+      font-weight: 700;
+      width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .stat-track {
+      flex: 1;
+      height: 5px;
+      background: var(--surface-2);
+      border-radius: 50px;
+      overflow: hidden;
+    }
+
+    .stat-fill {
+      height: 100%;
+      border-radius: 50px;
+      width: 0;
+      transition: width 1s cubic-bezier(.25,1,.5,1);
+    }
+
+    .stat-total {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: .9rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat-total span:first-child {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .stat-total span:last-child {
+      font-family: 'Orbitron', monospace;
+      font-size: .9rem;
+      font-weight: 700;
+    }
+
+    /* Info cards */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+    }
+
+    .info-box {
+      background: var(--surface-2);
+      border-radius: 12px;
+      padding: .75rem .85rem;
+    }
+
+    .info-box .label {
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .2rem;
+    }
+
+    .info-box .value {
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: .95rem;
+      text-transform: capitalize;
+    }
+
+    .info-box.full { grid-column: 1 / -1; }
+
+    /* Close */
+    .modal-close {
+      position: absolute;
+      top: 1.2rem;
+      left: 1.2rem;
+      z-index: 10;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .18s;
+    }
+
+    .modal-close:hover { background: rgba(255,255,255,.12); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">POKÉ<em>DEX</em></div>
+      <div class="search-wrap">
+        <svg class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input id="search" type="search" placeholder="Buscar nome ou nº...">
+      </div>
+      <div class="header-meta">
+        <a href="battle.html" class="battle-link">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Arena
+        </a>
+        <button id="random-btn" title="Pokémon aleatório" disabled>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4h4l2 2h6l2-2h2v2l-2 2v2l2 2v2h-2l-2-2h-6l-2 2H4v-2l2-2V8L4 6V4z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 9l2 2-2 2M9 9L7 11l2 2"/>
+          </svg>
+          Aleatório
+        </button>
+        <span id="count-badge">Carregando...</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Digital<span>Archive</span></h1>
+      <p>Explore todos os Pokémon com dados em tempo real da PokéAPI.</p>
+    </div>
+
+    <div class="filters-wrap">
+      <div class="filters-label">Filtrar por tipo</div>
+      <div class="filters" id="filters">
+        <button class="type-btn active" data-type="all">Todos</button>
+      </div>
+    </div>
+
+    <div id="grid"></div>
+
+    <div class="load-wrap">
+      <button id="load-more" disabled>Carregar Gerações 3–9</button>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modal-close">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <div id="modal-inner"></div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    /* ── CONFIG ─────────────────────────────────────── */
+    const TYPE_COLOR = {
+      normal:'#A8A878', fire:'#F08030', water:'#6890F0', electric:'#F8D030',
+      grass:'#78C850', ice:'#98D8D8', fighting:'#C03028', poison:'#A040A0',
+      ground:'#E0C068', flying:'#A890F0', psychic:'#F85888', bug:'#A8B820',
+      rock:'#B8A038', ghost:'#705898', dragon:'#7038F8', dark:'#705848',
+      steel:'#B8B8D0', fairy:'#EE99AC'
+    };
+
+    const TYPE_PT = {
+      normal:'Normal', fire:'Fogo', water:'Água', electric:'Elétrico',
+      grass:'Planta', ice:'Gelo', fighting:'Lutador', poison:'Veneno',
+      ground:'Terra', flying:'Voador', psychic:'Psíquico', bug:'Inseto',
+      rock:'Pedra', ghost:'Fantasma', dragon:'Dragão', dark:'Sombrio',
+      steel:'Aço', fairy:'Fada'
+    };
+
+    const STAT_SHORT = {
+      hp:'HP', attack:'ATK', defense:'DEF',
+      'special-attack':'SpA', 'special-defense':'SpD', speed:'VEL'
+    };
+
+    /* ── STATE ──────────────────────────────────────── */
+    let all = [];
+    let activeType = 'all';
+    let query = '';
+    let extLoaded = false;
+    let loading = false;
+
+    /* ── ELEMENTS ───────────────────────────────────── */
+    const grid      = document.getElementById('grid');
+    const searchEl  = document.getElementById('search');
+    const filtersEl = document.getElementById('filters');
+    const loadBtn   = document.getElementById('load-more');
+    const randomBtn = document.getElementById('random-btn');
+    const badge     = document.getElementById('count-badge');
+    const overlay   = document.getElementById('overlay');
+    const modalEl   = document.getElementById('modal');
+    const modalInner= document.getElementById('modal-inner');
+    const closeBtn  = document.getElementById('modal-close');
+
+    /* ── HELPERS ────────────────────────────────────── */
+    function hex(h, a) {
+      const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    function pad(n) { return String(n).padStart(4,'0'); }
+
+    function sprite(data) {
+      return data.sprites?.other?.['official-artwork']?.front_default
+          || data.sprites?.front_default
+          || '';
+    }
+
+    function spriteShiny(data) {
+      return data.sprites?.other?.['official-artwork']?.front_shiny
+          || data.sprites?.front_shiny
+          || sprite(data);
+    }
+
+    function typeTag(name, color) {
+      return `<span class="type-tag" style="background:${hex(color,.18)};color:${color};border:1px solid ${hex(color,.35)}">${TYPE_PT[name]||name}</span>`;
+    }
+
+    /* ── TYPE FILTERS BUILD ──────────────────────────── */
+    Object.entries(TYPE_PT).forEach(([key, label]) => {
+      const c = TYPE_COLOR[key];
+      const btn = document.createElement('button');
+      btn.className = 'type-btn';
+      btn.dataset.type = key;
+      btn.textContent = label;
+      btn.addEventListener('click', () => setType(key));
+      btn.addEventListener('mouseenter', () => { if (!btn.classList.contains('active')) styleBtn(btn, key); });
+      btn.addEventListener('mouseleave', () => { if (!btn.classList.contains('active')) unstyleBtn(btn); });
+      filtersEl.appendChild(btn);
+    });
+
+    function styleBtn(btn, type) {
+      const c = TYPE_COLOR[type];
+      if (!c) return;
+      btn.style.borderColor = hex(c,.5);
+      btn.style.color = c;
+      btn.style.background = hex(c,.12);
+    }
+
+    function unstyleBtn(btn) {
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      btn.style.background = '';
+    }
+
+    function setType(type) {
+      activeType = type;
+      document.querySelectorAll('.type-btn').forEach(b => {
+        b.classList.remove('active');
+        unstyleBtn(b);
+      });
+      const active = document.querySelector(`.type-btn[data-type="${type}"]`);
+      active.classList.add('active');
+      if (type !== 'all') styleBtn(active, type);
+      else { active.style.borderColor='rgba(255,255,255,.2)'; active.style.color=getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }
+      render();
+    }
+
+    /* ── INTERSECTION OBSERVER (card reveal) ─────────── */
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: .08 });
+
+    /* ── SKELETON ───────────────────────────────────── */
+    function addSkeletons(n) {
+      for (let i=0;i<n;i++) {
+        const s = document.createElement('div');
+        s.className = 'skeleton';
+        s.innerHTML = `
+          <div class="skel" style="width:52px;height:10px;border-radius:50px;align-self:flex-start"></div>
+          <div class="skel" style="width:90px;height:90px;border-radius:50%"></div>
+          <div class="skel" style="width:75%;height:14px"></div>
+          <div style="display:flex;gap:.35rem">
+            <div class="skel" style="width:48px;height:18px;border-radius:50px"></div>
+            <div class="skel" style="width:48px;height:18px;border-radius:50px"></div>
+          </div>`;
+        grid.appendChild(s);
+      }
+    }
+
+    /* ── RENDER ─────────────────────────────────────── */
+    function filtered() {
+      return all.filter(p => {
+        const byType = activeType === 'all' || p.types.some(t => t.type.name === activeType);
+        const q = query.trim().toLowerCase();
+        const byQ = !q || p.name.toLowerCase().includes(q) || String(p.id).includes(q);
+        return byType && byQ;
+      });
+    }
+
+    function render() {
+      grid.innerHTML = '';
+      const list = filtered();
+      badge.textContent = `${list.length} / ${all.length} POKÉMON`;
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="empty">
+            <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p>Nenhum Pokémon encontrado</p>
+          </div>`;
+        return;
+      }
+
+      list.forEach((p, i) => {
+        const pType = p.types[0].type.name;
+        const c = TYPE_COLOR[pType] || '#7038F8';
+        const card = document.createElement('div');
+        card.className = 'poke-card';
+        card.style.setProperty('--c', hex(c,.18));
+        card.style.setProperty('--c-dim', hex(c,.4));
+        card.style.setProperty('--c-glow', hex(c,.2));
+
+        const imgSrc = sprite(p);
+        const tags = p.types.map(t => typeTag(t.type.name, TYPE_COLOR[t.type.name]||'#888')).join('');
+
+        card.innerHTML = `
+          <div class="poke-num">#${pad(p.id)}</div>
+          <div class="poke-img-wrap">
+            <div class="poke-img-halo"></div>
+            <img class="poke-img" src="${imgSrc}" alt="${p.name}" loading="lazy"
+                 onerror="this.style.opacity='.3'">
+          </div>
+          <div class="poke-name">${p.name}</div>
+          <div class="types">${tags}</div>`;
+
+        card.addEventListener('click', () => openModal(p));
+        grid.appendChild(card);
+        io.observe(card);
+      });
+    }
+
+    /* ── FETCH ──────────────────────────────────────── */
+    async function fetchAll(url) {
+      const r = await fetch(url); return r.json();
+    }
+
+    async function fetchBatch(list) {
+      return Promise.all(list.map(p => fetchAll(p.url)));
+    }
+
+    async function init() {
+      addSkeletons(12);
+      const data = await fetchAll('https://pokeapi.co/api/v2/pokemon?limit=251&offset=0');
+      const batch = await fetchBatch(data.results);
+      all = batch.sort((a,b) => a.id - b.id);
+      grid.querySelectorAll('.skeleton').forEach(s => s.remove());
+      render();
+      loadBtn.disabled = false;
+      randomBtn.disabled = false;
+    }
+
+    randomBtn.addEventListener('click', () => {
+      const list = filtered();
+      if (!list.length) return;
+      const p = list[Math.floor(Math.random() * list.length)];
+      randomBtn.style.transform = 'scale(.94) rotate(15deg)';
+      setTimeout(() => { randomBtn.style.transform = ''; }, 200);
+      openModal(p);
+    });
+
+    loadBtn.addEventListener('click', async () => {
+      if (loading || extLoaded) return;
+      loading = true;
+      loadBtn.disabled = true;
+      loadBtn.textContent = 'Carregando...';
+      addSkeletons(8);
+      const data = await fetchAll('https://pokeapi.co/api/v2/pokemon?limit=700&offset=251');
+      const batch = await fetchBatch(data.results);
+      all = [...all, ...batch].sort((a,b) => a.id - b.id);
+      grid.querySelectorAll('.skeleton').forEach(s => s.remove());
+      extLoaded = true;
+      loading = false;
+      loadBtn.textContent = 'Todos os Pokémon carregados';
+      loadBtn.disabled = true;
+      render();
+    });
+
+    searchEl.addEventListener('input', e => { query = e.target.value; render(); });
+
+    /* ── MODAL ──────────────────────────────────────── */
+    function openModal(p) {
+      const pType = p.types[0].type.name;
+      const c = TYPE_COLOR[pType] || '#7038F8';
+      const normalSrc = sprite(p);
+      const shinySrc  = spriteShiny(p);
+      const tags = p.types.map(t => typeTag(t.type.name, TYPE_COLOR[t.type.name]||'#888')).join('');
+
+      const statsHtml = p.stats.map(s => {
+        const nm = STAT_SHORT[s.stat.name] || s.stat.name;
+        const val = s.base_stat;
+        const pct = Math.min(100, Math.round(val / 255 * 100));
+        return `
+          <div class="stat-row">
+            <div class="stat-name">${nm}</div>
+            <div class="stat-val">${val}</div>
+            <div class="stat-track"><div class="stat-fill" data-pct="${pct}" style="background:${c}"></div></div>
+          </div>`;
+      }).join('');
+
+      const total = p.stats.reduce((s,x)=>s+x.base_stat,0);
+      const h = (p.height/10).toFixed(1);
+      const w = (p.weight/10).toFixed(1);
+      const ab = p.abilities.map(a=>a.ability.name.replace(/-/g,' ')).join(', ');
+      const exp = p.base_experience ?? '—';
+
+      modalInner.innerHTML = `
+        <div class="modal-band">
+          <div class="modal-band-bg" style="--mc:${hex(c,.28)}"></div>
+          <div class="modal-band-circle"></div>
+          <img class="modal-sprite" id="modal-poke-img" src="${shinySrc}" alt="${p.name}" style="--mg:${hex(c,.45)}">
+          <div class="modal-num">#${pad(p.id)}</div>
+          <div class="modal-name">${p.name}</div>
+          <div class="modal-types">${tags}</div>
+          <button class="shiny-toggle on" id="shiny-toggle">✦ Shiny</button>
+        </div>
+        <div class="modal-body">
+          <div>
+            <div class="modal-section-title">Estatísticas Base</div>
+            ${statsHtml}
+            <div class="stat-total">
+              <span>Total</span><span>${total}</span>
+            </div>
+          </div>
+          <div>
+            <div class="modal-section-title">Informações</div>
+            <div class="info-grid">
+              <div class="info-box"><div class="label">Altura</div><div class="value">${h} m</div></div>
+              <div class="info-box"><div class="label">Peso</div><div class="value">${w} kg</div></div>
+              <div class="info-box"><div class="label">Exp. Base</div><div class="value">${exp}</div></div>
+              <div class="info-box"><div class="label">Geração</div><div class="value">${gen(p.id)}</div></div>
+              <div class="info-box full"><div class="label">Habilidades</div><div class="value">${ab}</div></div>
+            </div>
+          </div>
+        </div>`;
+
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Animate bars
+      setTimeout(() => {
+        modalInner.querySelectorAll('.stat-fill').forEach(b => { b.style.width = b.dataset.pct + '%'; });
+      }, 80);
+
+      // Shiny toggle
+      let isShiny = true;
+      document.getElementById('shiny-toggle').addEventListener('click', () => {
+        isShiny = !isShiny;
+        const img = document.getElementById('modal-poke-img');
+        const btn = document.getElementById('shiny-toggle');
+        img.style.opacity = '0';
+        setTimeout(() => {
+          img.src = isShiny ? shinySrc : normalSrc;
+          img.style.opacity = '1';
+        }, 150);
+        btn.classList.toggle('on', isShiny);
+        btn.textContent = isShiny ? '✦ Shiny' : '✦ Normal';
+      });
+    }
+
+    function gen(id) {
+      if (id<=151) return 'I (Kanto)';
+      if (id<=251) return 'II (Johto)';
+      if (id<=386) return 'III (Hoenn)';
+      if (id<=493) return 'IV (Sinnoh)';
+      if (id<=649) return 'V (Unova)';
+      if (id<=721) return 'VI (Kalos)';
+      if (id<=809) return 'VII (Alola)';
+      if (id<=905) return 'VIII (Galar)';
+      return 'IX (Paldea)';
+    }
+
+    function closeModal() {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    init();
+  })();
+  </script>
+</body>
+</html>

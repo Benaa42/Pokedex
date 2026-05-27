@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POKÉBATTLE — Arena</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: #0e0e1c;
+      --surface-2: #15152a;
+      --text: #e2e2f0;
+      --muted: #5a5a7a;
+      --border: rgba(255,255,255,0.06);
+      --p1: #F85888;
+      --p2: #6890F0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 50% 60% at 0% 50%, rgba(248,88,136,.1) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 60% at 100% 50%, rgba(104,144,240,.1) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 30% at 50% 0%, rgba(112,56,248,.12) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(7,7,15,.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: .9rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      transition: color .2s;
+      flex-shrink: 0;
+    }
+
+    .back-link:hover { color: var(--text); }
+
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      letter-spacing: .12em;
+      background: linear-gradient(130deg, var(--p1), #a855f7, var(--p2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-right: auto;
+    }
+
+    /* ── LAYOUT ─────────────────────────────────────── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ── SELECTION PANELS ───────────────────────────── */
+    .selection-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    @media (max-width: 680px) {
+      .selection-row { grid-template-columns: 1fr; }
+      .vs-divider { display: none; }
+    }
+
+    .vs-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 3rem;
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: 1.4rem;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+
+    .selector {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      transition: border-color .3s;
+    }
+
+    .selector.p1 { border-color: rgba(248,88,136,.15); }
+    .selector.p2 { border-color: rgba(104,144,240,.15); }
+
+    .selector-header {
+      padding: .75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .player-label {
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .2em;
+      font-weight: 700;
+    }
+
+    .p1 .player-label { color: var(--p1); }
+    .p2 .player-label { color: var(--p2); }
+
+    .rand-mini {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .55rem;
+      letter-spacing: .1em;
+      padding: .3rem .7rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all .18s;
+    }
+
+    .rand-mini:hover:not(:disabled) { color: var(--text); border-color: rgba(255,255,255,.25); }
+    .rand-mini:disabled { opacity: .35; cursor: not-allowed; }
+
+    /* Search input */
+    .search-area {
+      padding: .85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+
+    .search-area svg {
+      position: absolute;
+      left: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px;
+      height: 15px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .sel-search {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: .55rem 1rem .55rem 2.4rem;
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: .9rem;
+      font-weight: 500;
+      letter-spacing: .05em;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .sel-search::placeholder { color: var(--muted); }
+    .p1 .sel-search:focus { border-color: rgba(248,88,136,.5); }
+    .p2 .sel-search:focus { border-color: rgba(104,144,240,.5); }
+
+    /* Results list */
+    .results-list {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .55rem 1.25rem;
+      cursor: pointer;
+      transition: background .15s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: rgba(255,255,255,.04); }
+
+    .result-item img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .result-item .r-name {
+      font-weight: 700;
+      font-size: .9rem;
+      letter-spacing: .05em;
+      text-transform: capitalize;
+      flex: 1;
+    }
+
+    .result-item .r-num {
+      font-family: 'Orbitron', monospace;
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .12em;
+    }
+
+    /* Selected Pokémon display */
+    .selected-display {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1.25rem 1.25rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .selected-display.visible { display: flex; }
+
+    .sel-sprite {
+      width: 130px;
+      height: 130px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 20px var(--glow, rgba(112,56,248,.3)));
+      margin-bottom: .75rem;
+    }
+
+    .sel-name {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+
+    .sel-types { display: flex; gap: .35rem; justify-content: center; margin-bottom: 1rem; }
+
+    .type-tag {
+      padding: .18rem .55rem;
+      border-radius: 50px;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* Mini stats */
+    .sel-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: .4rem;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .mini-stat {
+      background: var(--surface-2);
+      border-radius: 10px;
+      padding: .5rem .4rem;
+      text-align: center;
+    }
+
+    .mini-stat .s-label {
+      font-size: .58rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      margin-bottom: .15rem;
+    }
+
+    .mini-stat .s-val {
+      font-family: 'Orbitron', monospace;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+
+    .change-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .58rem;
+      letter-spacing: .12em;
+      padding: .4rem 1.2rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all .18s;
+      text-transform: uppercase;
+    }
+
+    .change-btn:hover { color: var(--text); border-color: rgba(255,255,255,.22); }
+
+    .empty-slot {
+      padding: 2.5rem 1.25rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-slot svg { margin-bottom: .75rem; opacity: .25; }
+
+    .empty-slot p {
+      font-family: 'Orbitron', monospace;
+      font-size: .65rem;
+      letter-spacing: .15em;
+    }
+
+    /* ── ARENA ──────────────────────────────────────── */
+    .arena {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .arena-field {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: end;
+      gap: 0;
+      padding: 2.5rem 2rem 0;
+      min-height: 280px;
+      position: relative;
+    }
+
+    /* Side glow */
+    .arena-field::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 45% 80% at 15% 100%, rgba(248,88,136,.1) 0%, transparent 60%),
+        radial-gradient(ellipse 45% 80% at 85% 100%, rgba(104,144,240,.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Ground line */
+    .arena-field::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 5%;
+      right: 5%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(248,88,136,.3), rgba(255,255,255,.1), rgba(104,144,240,.3), transparent);
+    }
+
+    .fighter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .fighter.p1 { align-items: flex-start; padding-left: 1rem; }
+    .fighter.p2 { align-items: flex-end; padding-right: 1rem; }
+
+    /* Info bar above sprite */
+    .fighter-info {
+      width: 100%;
+      max-width: 280px;
+      margin-bottom: 1rem;
+    }
+
+    .fighter.p2 .fighter-info { text-align: right; }
+
+    .f-name {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(.75rem, 2vw, 1rem);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: .35rem;
+    }
+
+    .fighter.p1 .f-name { color: var(--p1); }
+    .fighter.p2 .f-name { color: var(--p2); }
+
+    .hp-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .3rem;
+    }
+
+    .fighter.p2 .hp-row { flex-direction: row-reverse; }
+
+    .hp-label {
+      font-family: 'Orbitron', monospace;
+      font-size: .55rem;
+      letter-spacing: .15em;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .hp-track {
+      flex: 1;
+      height: 8px;
+      background: var(--surface-2);
+      border-radius: 50px;
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      height: 100%;
+      border-radius: 50px;
+      width: 100%;
+      transition: width .6s ease, background-color .4s;
+      background: #4ade80;
+    }
+
+    .hp-fill.yellow { background: #facc15; }
+    .hp-fill.red {
+      background: #f87171;
+      animation: hp-pulse 1s infinite;
+    }
+
+    @keyframes hp-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .6; }
+    }
+
+    .hp-text {
+      font-family: 'Orbitron', monospace;
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      white-space: nowrap;
+    }
+
+    /* Sprite */
+    .arena-sprite-wrap {
+      position: relative;
+    }
+
+    .arena-sprite {
+      width: clamp(100px, 15vw, 180px);
+      height: clamp(100px, 15vw, 180px);
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,.5));
+      transition: filter .3s;
+    }
+
+    .fighter.p1 .arena-sprite { transform: scaleX(-1); }
+
+    .fighter-placeholder {
+      width: clamp(100px, 15vw, 180px);
+      height: clamp(100px, 15vw, 180px);
+      border-radius: 50%;
+      border: 2px dashed rgba(255,255,255,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .55rem;
+      letter-spacing: .1em;
+      text-align: center;
+    }
+
+    /* VS center */
+    .arena-vs {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2rem;
+      z-index: 2;
+      position: relative;
+    }
+
+    .vs-text {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      letter-spacing: .1em;
+      background: linear-gradient(135deg, var(--p1), #a855f7, var(--p2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: .6;
+    }
+
+    /* Arena bottom controls */
+    .arena-controls {
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    #battle-btn {
+      background: linear-gradient(130deg, rgba(248,88,136,.25), rgba(104,144,240,.25));
+      border: 1px solid rgba(248,88,136,.4);
+      color: var(--text);
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: .75rem;
+      letter-spacing: .2em;
+      padding: .9rem 2.8rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all .2s;
+      text-transform: uppercase;
+    }
+
+    #battle-btn:hover:not(:disabled) {
+      background: linear-gradient(130deg, rgba(248,88,136,.4), rgba(104,144,240,.4));
+      border-color: rgba(248,88,136,.7);
+      box-shadow: 0 0 30px rgba(248,88,136,.2), 0 0 30px rgba(104,144,240,.2);
+      transform: scale(1.02);
+    }
+
+    #battle-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+    #battle-btn.battling {
+      animation: btn-pulse 1.2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes btn-pulse {
+      0%, 100% { box-shadow: 0 0 10px rgba(248,88,136,.2); }
+      50% { box-shadow: 0 0 30px rgba(248,88,136,.5), 0 0 30px rgba(104,144,240,.4); }
+    }
+
+    /* ── BATTLE LOG ─────────────────────────────────── */
+    .log-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .log-header {
+      padding: .85rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .log-title {
+      font-family: 'Orbitron', monospace;
+      font-size: .62rem;
+      letter-spacing: .2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    #clear-log {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .55rem;
+      letter-spacing: .12em;
+      cursor: pointer;
+      padding: .2rem .5rem;
+      transition: color .18s;
+    }
+
+    #clear-log:hover { color: var(--text); }
+
+    #log {
+      height: 280px;
+      overflow-y: auto;
+      padding: .75rem 0;
+    }
+
+    .log-entry {
+      padding: .4rem 1.5rem;
+      font-size: .88rem;
+      font-weight: 500;
+      line-height: 1.4;
+      letter-spacing: .03em;
+      opacity: 0;
+      transform: translateX(-10px);
+      animation: log-in .25s forwards;
+    }
+
+    @keyframes log-in {
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .log-entry.system { color: #a855f7; font-weight: 700; }
+    .log-entry.round  {
+      color: var(--muted);
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .18em;
+      padding-top: .7rem;
+    }
+    .log-entry.p1     { color: var(--p1); }
+    .log-entry.p2     { color: var(--p2); }
+    .log-entry.crit   { color: #facc15; font-weight: 700; }
+    .log-entry.miss   { color: var(--muted); font-style: italic; }
+    .log-entry.hp     { color: rgba(255,255,255,.4); font-size: .8rem; padding-left: 2.5rem; }
+    .log-entry.faint  { color: #f87171; font-weight: 700; }
+    .log-entry.win    {
+      color: #facc15;
+      font-family: 'Orbitron', monospace;
+      font-size: .9rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      padding: .75rem 1.5rem;
+      text-align: center;
+    }
+    .log-entry.info   { color: rgba(255,255,255,.55); font-size: .82rem; }
+
+    /* ── ATTACK ANIMATIONS ──────────────────────────── */
+    @keyframes atk-p1 {
+      0%   { transform: scaleX(-1) translateX(0); }
+      40%  { transform: scaleX(-1) translateX(40px); }
+      100% { transform: scaleX(-1) translateX(0); }
+    }
+
+    @keyframes atk-p2 {
+      0%   { transform: scaleX(1) translateX(0); }
+      40%  { transform: scaleX(1) translateX(-40px); }
+      100% { transform: scaleX(1) translateX(0); }
+    }
+
+    @keyframes hit-flash {
+      0%, 100% { filter: drop-shadow(0 8px 24px rgba(0,0,0,.5)); }
+      30%       { filter: drop-shadow(0 0 20px #f87171) brightness(2); }
+    }
+
+    @keyframes miss-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    @keyframes faint-anim {
+      to { opacity: 0; transform: translateY(30px) scale(.8); }
+    }
+
+    @keyframes winner-glow {
+      0%, 100% { filter: drop-shadow(0 8px 24px rgba(250,204,21,.3)); }
+      50%       { filter: drop-shadow(0 0 40px rgba(250,204,21,.7)) brightness(1.2); }
+    }
+
+    .doing-atk-p1 .arena-sprite { animation: atk-p1 .45s ease-in-out; }
+    .doing-atk-p2 .arena-sprite { animation: atk-p2 .45s ease-in-out; }
+    .taking-hit .arena-sprite { animation: hit-flash .5s ease; }
+    .missing-atk .arena-sprite { animation: miss-shake .35s ease; }
+    .fainted .arena-sprite { animation: faint-anim .6s forwards; }
+    .is-winner .arena-sprite { animation: winner-glow 1.2s infinite; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="back-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Pokédex
+      </a>
+      <div class="logo">⚔ BATTLE ARENA</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- SELECTION -->
+    <div class="selection-row">
+
+      <!-- P1 -->
+      <div class="selector p1" id="sel-p1">
+        <div class="selector-header">
+          <span class="player-label">Jogador 1</span>
+          <button class="rand-mini" id="rand-p1" disabled>🎲 Aleatório</button>
+        </div>
+        <div class="search-area" id="search-area-p1">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input class="sel-search" id="search-p1" placeholder="Buscar Pokémon..." autocomplete="off">
+        </div>
+        <div class="results-list" id="results-p1">
+          <div class="empty-slot">
+            <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="1.5"/>
+              <path stroke-linecap="round" stroke-width="1.5" d="M2 12h20M12 2a10 10 0 010 20"/>
+            </svg>
+            <p>Carregando lista...</p>
+          </div>
+        </div>
+        <div class="selected-display" id="display-p1">
+          <img class="sel-sprite" id="sprite-p1" src="" alt="">
+          <div class="sel-name" id="name-p1"></div>
+          <div class="sel-types" id="types-p1"></div>
+          <div class="sel-stats" id="stats-p1"></div>
+          <button class="change-btn" data-side="p1">Trocar</button>
+        </div>
+      </div>
+
+      <div class="vs-divider">VS</div>
+
+      <!-- P2 -->
+      <div class="selector p2" id="sel-p2">
+        <div class="selector-header">
+          <span class="player-label">Jogador 2</span>
+          <button class="rand-mini" id="rand-p2" disabled>🎲 Aleatório</button>
+        </div>
+        <div class="search-area" id="search-area-p2">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input class="sel-search" id="search-p2" placeholder="Buscar Pokémon..." autocomplete="off">
+        </div>
+        <div class="results-list" id="results-p2">
+          <div class="empty-slot">
+            <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke-width="1.5"/>
+              <path stroke-linecap="round" stroke-width="1.5" d="M2 12h20M12 2a10 10 0 010 20"/>
+            </svg>
+            <p>Carregando lista...</p>
+          </div>
+        </div>
+        <div class="selected-display" id="display-p2">
+          <img class="sel-sprite" id="sprite-p2" src="" alt="">
+          <div class="sel-name" id="name-p2"></div>
+          <div class="sel-types" id="types-p2"></div>
+          <div class="sel-stats" id="stats-p2"></div>
+          <button class="change-btn" data-side="p2">Trocar</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ARENA -->
+    <div class="arena">
+      <div class="arena-field">
+
+        <!-- Fighter P1 -->
+        <div class="fighter p1" id="fighter-p1">
+          <div class="fighter-info">
+            <div class="f-name" id="arena-name-p1">—</div>
+            <div class="hp-row">
+              <span class="hp-label">HP</span>
+              <div class="hp-track"><div class="hp-fill" id="hp-fill-p1"></div></div>
+              <span class="hp-text" id="hp-text-p1">—</span>
+            </div>
+          </div>
+          <div class="arena-sprite-wrap">
+            <div class="fighter-placeholder" id="placeholder-p1">Nenhum Pokémon</div>
+            <img class="arena-sprite" id="arena-sprite-p1" src="" alt="" style="display:none">
+          </div>
+        </div>
+
+        <div class="arena-vs"><div class="vs-text">VS</div></div>
+
+        <!-- Fighter P2 -->
+        <div class="fighter p2" id="fighter-p2">
+          <div class="fighter-info">
+            <div class="f-name" id="arena-name-p2">—</div>
+            <div class="hp-row">
+              <span class="hp-text" id="hp-text-p2">—</span>
+              <div class="hp-track"><div class="hp-fill" id="hp-fill-p2"></div></div>
+              <span class="hp-label">HP</span>
+            </div>
+          </div>
+          <div class="arena-sprite-wrap">
+            <div class="fighter-placeholder" id="placeholder-p2">Nenhum Pokémon</div>
+            <img class="arena-sprite" id="arena-sprite-p2" src="" alt="" style="display:none">
+          </div>
+        </div>
+
+      </div>
+      <div class="arena-controls">
+        <button id="battle-btn" disabled>⚔ Iniciar Batalha</button>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="log-section">
+      <div class="log-header">
+        <span class="log-title">Registro de Batalha</span>
+        <button id="clear-log">Limpar</button>
+      </div>
+      <div id="log">
+        <div class="log-entry info" style="opacity:1;transform:none">Selecione dois Pokémon e clique em Iniciar Batalha.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+  (() => {
+    /* ── CONSTANTS ──────────────────────────────────── */
+    const TYPE_COLOR = {
+      normal:'#A8A878', fire:'#F08030', water:'#6890F0', electric:'#F8D030',
+      grass:'#78C850', ice:'#98D8D8', fighting:'#C03028', poison:'#A040A0',
+      ground:'#E0C068', flying:'#A890F0', psychic:'#F85888', bug:'#A8B820',
+      rock:'#B8A038', ghost:'#705898', dragon:'#7038F8', dark:'#705848',
+      steel:'#B8B8D0', fairy:'#EE99AC'
+    };
+
+    const TYPE_PT = {
+      normal:'Normal', fire:'Fogo', water:'Água', electric:'Elétrico',
+      grass:'Planta', ice:'Gelo', fighting:'Lutador', poison:'Veneno',
+      ground:'Terra', flying:'Voador', psychic:'Psíquico', bug:'Inseto',
+      rock:'Pedra', ghost:'Fantasma', dragon:'Dragão', dark:'Sombrio',
+      steel:'Aço', fairy:'Fada'
+    };
+
+    const STAT_LABEL = {
+      hp:'HP', attack:'ATK', defense:'DEF',
+      'special-attack':'SpA', 'special-defense':'SpD', speed:'VEL'
+    };
+
+    /* ── STATE ──────────────────────────────────────── */
+    let pokedexList = [];   // { name, url, id }
+    let p1Data = null;
+    let p2Data = null;
+    let battling = false;
+
+    /* ── HELPERS ────────────────────────────────────── */
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    function hex(h, a) {
+      const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    function pad(n) { return String(n).padStart(4,'0'); }
+
+    function sprite(data) {
+      return data.sprites?.other?.['official-artwork']?.front_default
+          || data.sprites?.front_default || '';
+    }
+
+    function getStat(data, name) {
+      return data.stats.find(s => s.stat.name === name)?.base_stat ?? 45;
+    }
+
+    /* Simplified level-50 stat formula (31 IV, 0 EV, neutral nature) */
+    function calcHP(base) { return Math.floor((2 * base + 31) * 50 / 100) + 50 + 10; }
+    function calcStat(base) { return Math.floor((2 * base + 31) * 50 / 100) + 5; }
+
+    /* Gen 5+ damage formula with power 60, level 50 */
+    function calcDamage(atk, def) {
+      const power = [40, 60, 80][Math.floor(Math.random() * 3)];
+      const base = Math.floor((Math.floor(2 * 50 / 5 + 2) * power * atk / def) / 50) + 2;
+      const roll = 0.85 + Math.random() * 0.15;
+      return Math.max(1, Math.floor(base * roll));
+    }
+
+    function buildFighter(data, side) {
+      const maxHp = calcHP(getStat(data, 'hp'));
+      return {
+        name: data.name,
+        maxHp,
+        hp: maxHp,
+        atk:   calcStat(getStat(data, 'attack')),
+        def:   calcStat(getStat(data, 'defense')),
+        spAtk: calcStat(getStat(data, 'special-attack')),
+        spDef: calcStat(getStat(data, 'special-defense')),
+        spd:   calcStat(getStat(data, 'speed')),
+        side,
+      };
+    }
+
+    /* ── LOG ────────────────────────────────────────── */
+    const logEl = document.getElementById('log');
+
+    function addLog(msg, cls = '') {
+      const el = document.createElement('div');
+      el.className = `log-entry ${cls}`;
+      el.textContent = msg;
+      logEl.appendChild(el);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    document.getElementById('clear-log').addEventListener('click', () => {
+      logEl.innerHTML = '';
+    });
+
+    /* ── HP BAR ─────────────────────────────────────── */
+    function updateHP(side, cur, max) {
+      const pct = Math.max(0, cur / max * 100);
+      const fill = document.getElementById(`hp-fill-${side}`);
+      const text = document.getElementById(`hp-text-${side}`);
+      fill.style.width = pct + '%';
+      fill.className = 'hp-fill' + (pct > 50 ? '' : pct > 25 ? ' yellow' : ' red');
+      text.textContent = `${cur}/${max}`;
+    }
+
+    /* ── SPRITE ANIMATIONS ──────────────────────────── */
+    async function animateAttack(atkSide, defSide) {
+      const atkEl = document.getElementById(`fighter-${atkSide}`);
+      const defEl = document.getElementById(`fighter-${defSide}`);
+      atkEl.classList.add(`doing-atk-${atkSide}`);
+      await sleep(200);
+      defEl.classList.add('taking-hit');
+      await sleep(300);
+      atkEl.classList.remove(`doing-atk-${atkSide}`);
+      defEl.classList.remove('taking-hit');
+    }
+
+    async function animateMiss(side) {
+      const el = document.getElementById(`fighter-${side}`);
+      el.classList.add('missing-atk');
+      await sleep(400);
+      el.classList.remove('missing-atk');
+    }
+
+    function showFainted(side) {
+      document.getElementById(`fighter-${side}`).classList.add('fainted');
+    }
+
+    function showWinner(side) {
+      document.getElementById(`fighter-${side}`).classList.add('is-winner');
+    }
+
+    /* ── BATTLE ─────────────────────────────────────── */
+    async function doAttack(attacker, defender) {
+      const isMiss = Math.random() < 0.1;
+      if (isMiss) {
+        addLog(`${attacker.name} errou o ataque!`, 'miss');
+        await animateMiss(attacker.side);
+        return;
+      }
+
+      const isCrit = Math.random() < 0.0625;
+      const offense = Math.max(attacker.atk, attacker.spAtk);
+      const defense = attacker.atk >= attacker.spAtk ? defender.def : defender.spDef;
+      let dmg = calcDamage(offense, defense);
+      if (isCrit) dmg = Math.floor(dmg * 1.5);
+
+      await animateAttack(attacker.side, defender.side);
+
+      defender.hp = Math.max(0, defender.hp - dmg);
+
+      if (isCrit) {
+        addLog(`⚡ GOLPE CRÍTICO! ${attacker.name} causou ${dmg} de dano em ${defender.name}!`, 'crit');
+      } else {
+        addLog(`${attacker.name} atacou ${defender.name} e causou ${dmg} de dano.`, attacker.side);
+      }
+
+      updateHP(defender.side, defender.hp, defender.maxHp);
+      await sleep(200);
+
+      const pct = Math.round(defender.hp / defender.maxHp * 100);
+      addLog(`${defender.name}: ${defender.hp}/${defender.maxHp} HP (${pct}%)`, 'hp');
+    }
+
+    async function startBattle() {
+      if (!p1Data || !p2Data || battling) return;
+      battling = true;
+
+      const battleBtn = document.getElementById('battle-btn');
+      battleBtn.disabled = true;
+      battleBtn.classList.add('battling');
+      battleBtn.textContent = 'Batalha em andamento...';
+
+      // Reset animations
+      ['p1','p2'].forEach(s => {
+        document.getElementById(`fighter-${s}`).classList.remove('fainted','is-winner');
+      });
+
+      const f1 = buildFighter(p1Data, 'p1');
+      const f2 = buildFighter(p2Data, 'p2');
+
+      updateHP('p1', f1.hp, f1.maxHp);
+      updateHP('p2', f2.hp, f2.maxHp);
+      logEl.innerHTML = '';
+
+      addLog('⚔ BATALHA INICIADA!', 'system');
+      addLog(`${f1.name.toUpperCase()} vs ${f2.name.toUpperCase()}`, 'system');
+      await sleep(800);
+
+      let turn = 1;
+
+      while (f1.hp > 0 && f2.hp > 0) {
+        addLog(`— TURNO ${turn} —`, 'round');
+        await sleep(350);
+
+        let first, second;
+        if (f1.spd > f2.spd)      { first = f1; second = f2; }
+        else if (f2.spd > f1.spd) { first = f2; second = f1; }
+        else                       { [first, second] = Math.random() < .5 ? [f1,f2] : [f2,f1]; }
+
+        if (turn === 1) {
+          addLog(
+            `${first.name} é mais rápido! (VEL ${first.spd} vs ${second.spd}) Age primeiro.`,
+            'info'
+          );
+          await sleep(400);
+        }
+
+        await doAttack(first, second);
+        if (second.hp <= 0) break;
+
+        await sleep(500);
+        await doAttack(second, first);
+
+        turn++;
+        await sleep(600);
+
+        if (turn > 100) { addLog('Empate! A batalha chegou ao limite de turnos.', 'system'); break; }
+      }
+
+      await sleep(400);
+
+      const winner = f1.hp > 0 ? f1 : f2.hp > 0 ? f2 : null;
+      const loser  = winner === f1 ? f2 : f1;
+
+      if (winner) {
+        showFainted(loser.side);
+        addLog(`💀 ${loser.name} desmaiou!`, 'faint');
+        await sleep(700);
+        showWinner(winner.side);
+        addLog(`🏆 ${winner.name.toUpperCase()} VENCEU A BATALHA!`, 'win');
+      } else {
+        addLog('⚖ EMPATE! Nenhum Pokémon derrotou o outro.', 'system');
+      }
+
+      battling = false;
+      battleBtn.disabled = false;
+      battleBtn.classList.remove('battling');
+      battleBtn.textContent = '⚔ Revanche!';
+    }
+
+    document.getElementById('battle-btn').addEventListener('click', startBattle);
+
+    /* ── POKÉMON SELECTION UI ───────────────────────── */
+    function typeTag(name) {
+      const c = TYPE_COLOR[name] || '#888';
+      return `<span class="type-tag" style="background:${hex(c,.18)};color:${c};border:1px solid ${hex(c,.35)}">${TYPE_PT[name]||name}</span>`;
+    }
+
+    function showSelectedDisplay(side, data) {
+      const imgSrc = sprite(data);
+      const pType = data.types[0].type.name;
+      const c = TYPE_COLOR[pType] || '#7038F8';
+
+      document.getElementById(`sprite-${side}`).src = imgSrc;
+      document.getElementById(`sprite-${side}`).style.filter = `drop-shadow(0 6px 20px ${hex(c,.4)})`;
+      document.getElementById(`name-${side}`).textContent = data.name;
+      document.getElementById(`types-${side}`).innerHTML = data.types.map(t => typeTag(t.type.name)).join('');
+
+      const statsEl = document.getElementById(`stats-${side}`);
+      const statNames = ['hp','attack','defense','special-attack','special-defense','speed'];
+      statsEl.innerHTML = statNames.map(n => {
+        const base = getStat(data, n);
+        const calc = n === 'hp' ? calcHP(base) : calcStat(base);
+        return `<div class="mini-stat">
+          <span class="s-label">${STAT_LABEL[n]}</span>
+          <span class="s-val">${calc}</span>
+        </div>`;
+      }).join('');
+
+      document.getElementById(`search-area-${side}`).style.display = 'none';
+      document.getElementById(`results-${side}`).style.display = 'none';
+      document.getElementById(`display-${side}`).classList.add('visible');
+
+      // Update arena
+      document.getElementById(`arena-name-${side}`).textContent = data.name;
+      document.getElementById(`placeholder-${side}`).style.display = 'none';
+      const arenaSprite = document.getElementById(`arena-sprite-${side}`);
+      arenaSprite.src = imgSrc;
+      arenaSprite.style.display = 'block';
+
+      const maxHp = calcHP(getStat(data, 'hp'));
+      updateHP(side, maxHp, maxHp);
+
+      checkBattleReady();
+    }
+
+    function resetSelector(side) {
+      document.getElementById(`search-area-${side}`).style.display = '';
+      document.getElementById(`results-${side}`).style.display = '';
+      document.getElementById(`display-${side}`).classList.remove('visible');
+      document.getElementById(`search-${side}`).value = '';
+      renderResults(side, '');
+
+      document.getElementById(`arena-name-${side}`).textContent = '—';
+      document.getElementById(`placeholder-${side}`).style.display = '';
+      document.getElementById(`arena-sprite-${side}`).style.display = 'none';
+      document.getElementById(`hp-text-${side}`).textContent = '—';
+      document.getElementById(`hp-fill-${side}`).style.width = '100%';
+
+      if (side === 'p1') p1Data = null; else p2Data = null;
+      checkBattleReady();
+    }
+
+    document.querySelectorAll('.change-btn').forEach(btn => {
+      btn.addEventListener('click', () => resetSelector(btn.dataset.side));
+    });
+
+    function checkBattleReady() {
+      const btn = document.getElementById('battle-btn');
+      btn.disabled = !(p1Data && p2Data) || battling;
+      if (p1Data && p2Data && !battling) btn.textContent = '⚔ Iniciar Batalha';
+    }
+
+    /* Results rendering */
+    function renderResults(side, query) {
+      const container = document.getElementById(`results-${side}`);
+      const q = query.trim().toLowerCase();
+      const list = q
+        ? pokedexList.filter(p => p.name.includes(q) || String(p.id).includes(q)).slice(0, 30)
+        : pokedexList.slice(0, 20);
+
+      if (!list.length) {
+        container.innerHTML = `<div class="empty-slot" style="padding:1.5rem"><p>Nenhum resultado</p></div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(p => `
+        <div class="result-item" data-url="${p.url}" data-side="${side}">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png"
+               alt="${p.name}" loading="lazy" onerror="this.style.opacity='.2'">
+          <span class="r-name">${p.name}</span>
+          <span class="r-num">#${pad(p.id)}</span>
+        </div>`).join('');
+
+      container.querySelectorAll('.result-item').forEach(item => {
+        item.addEventListener('click', async () => {
+          item.style.opacity = '.5';
+          const data = await fetch(item.dataset.url).then(r => r.json());
+          if (item.dataset.side === 'p1') p1Data = data; else p2Data = data;
+          showSelectedDisplay(item.dataset.side, data);
+        });
+      });
+    }
+
+    ['p1','p2'].forEach(side => {
+      document.getElementById(`search-${side}`).addEventListener('input', e => {
+        renderResults(side, e.target.value);
+      });
+    });
+
+    /* Random buttons */
+    document.getElementById('rand-p1').addEventListener('click', async () => {
+      if (!pokedexList.length) return;
+      const p = pokedexList[Math.floor(Math.random() * pokedexList.length)];
+      const data = await fetch(p.url).then(r => r.json());
+      p1Data = data;
+      showSelectedDisplay('p1', data);
+    });
+
+    document.getElementById('rand-p2').addEventListener('click', async () => {
+      if (!pokedexList.length) return;
+      const p = pokedexList[Math.floor(Math.random() * pokedexList.length)];
+      const data = await fetch(p.url).then(r => r.json());
+      p2Data = data;
+      showSelectedDisplay('p2', data);
+    });
+
+    /* ── LOAD POKÉDEX LIST ──────────────────────────── */
+    async function loadList() {
+      const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0');
+      const json = await res.json();
+      pokedexList = json.results.map((p, i) => ({
+        name: p.name,
+        url: p.url,
+        id: i + 1,
+      }));
+      // Enable randoms
+      document.getElementById('rand-p1').disabled = false;
+      document.getElementById('rand-p2').disabled = false;
+      // Show initial results
+      renderResults('p1', '');
+      renderResults('p2', '');
+    }
+
+    loadList();
+  })();
+  </script>
+</body>
+</html>
