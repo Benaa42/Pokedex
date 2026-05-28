@@ -699,6 +699,195 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
+
+    /* ── BGM AUDIO CTRL ─────────────────────────────── */
+    .bgm-ctrl {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 50px;
+      padding: .28rem .7rem .28rem .28rem;
+      margin-left: auto;
+    }
+
+    .bgm-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+    .bgm-btn:hover { background: rgba(255,255,255,.13); color: var(--text); }
+    .bgm-btn.playing {
+      color: #facc15;
+      border-color: rgba(250,204,21,.7);
+      box-shadow: 0 0 10px rgba(250,204,21,.5);
+      animation: bgm-wave .6s infinite alternate;
+    }
+
+    @keyframes bgm-wave {
+      from { transform: scale(1); }
+      to   { transform: scale(1.1); }
+    }
+
+    .bgm-label {
+      font-family: 'Orbitron', monospace;
+      font-size: .5rem;
+      letter-spacing: .13em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .bgm-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 68px;
+      height: 3px;
+      border-radius: 50px;
+      background: rgba(255,255,255,.12);
+      outline: none;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .bgm-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #facc15;
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(250,204,21,.7);
+      transition: transform .15s;
+    }
+    .bgm-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    .bgm-slider::-moz-range-thumb {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #facc15;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ── BATTLE INTRO OVERLAY ────────────────────────── */
+    #battle-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8vw;
+      background: #07070f;
+      transition: opacity .65s ease;
+      overflow: hidden;
+    }
+    #battle-intro.hidden { display: none; }
+    #battle-intro.fade-out { opacity: 0; pointer-events: none; }
+
+    #battle-intro::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 55% 100% at 14% 50%, rgba(248,88,136,.16) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 100% at 86% 50%, rgba(104,144,240,.16) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .intro-fighter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      flex: 0 0 auto;
+      width: 30vw;
+      position: relative;
+      z-index: 1;
+    }
+
+    .intro-fighter img {
+      width: clamp(130px, 20vw, 220px);
+      height: clamp(130px, 20vw, 220px);
+      object-fit: contain;
+      filter: drop-shadow(0 10px 40px rgba(0,0,0,.7));
+      opacity: 0;
+      transition: transform .7s cubic-bezier(.15,1.4,.3,1), opacity .45s;
+    }
+    .intro-fighter.p1-side img { transform: translateX(-120vw); }
+    .intro-fighter.p2-side img { transform: translateX(120vw); }
+    .intro-fighter.p1-side.ready img { transform: translateX(0); opacity: 1; }
+    .intro-fighter.p2-side.ready img { transform: translateX(0); opacity: 1; }
+
+    .intro-fighter-name {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: clamp(.6rem, 1.6vw, .95rem);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .4s .35s, transform .4s .35s;
+    }
+    .intro-fighter.ready .intro-fighter-name { opacity: 1; transform: translateY(0); }
+    .intro-fighter.p1-side .intro-fighter-name { color: var(--p1); }
+    .intro-fighter.p2-side .intro-fighter-name { color: var(--p2); }
+
+    .intro-vs-wrap {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      opacity: 0;
+      transition: opacity .35s;
+    }
+    .intro-vs-wrap.show { opacity: 1; }
+
+    .intro-vs-text {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      letter-spacing: .14em;
+      background: linear-gradient(135deg, var(--p1) 0%, #a855f7 50%, var(--p2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: vs-throb .75s ease-in-out infinite alternate;
+    }
+
+    @keyframes vs-throb {
+      from { filter: drop-shadow(0 0 14px rgba(248,88,136,.6)); transform: scale(1); }
+      to   { filter: drop-shadow(0 0 30px rgba(104,144,240,.8)); transform: scale(1.09); }
+    }
+
+    .intro-flash {
+      position: fixed;
+      inset: 0;
+      background: white;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .intro-flash.on {
+      animation: screen-flash .55s ease forwards;
+    }
+    @keyframes screen-flash {
+      0%   { opacity: 0; }
+      18%  { opacity: .92; }
+      100% { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -712,8 +901,34 @@
         Pokédex
       </a>
       <div class="logo">⚔ BATTLE ARENA</div>
+      <div class="bgm-ctrl">
+        <button class="bgm-btn playing" id="bgm-btn" title="Música de batalha">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path stroke-linecap="round" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+          </svg>
+        </button>
+        <span class="bgm-label">BGM</span>
+        <input class="bgm-slider" id="bgm-slider" type="range" min="0" max="100" value="40" title="Volume da música">
+      </div>
     </div>
   </header>
+
+  <!-- Battle intro overlay -->
+  <div id="battle-intro" class="hidden">
+    <div class="intro-fighter p1-side" id="intro-p1">
+      <img id="intro-img-p1" src="" alt="">
+      <div class="intro-fighter-name" id="intro-name-p1"></div>
+    </div>
+    <div class="intro-vs-wrap" id="intro-vs">
+      <div class="intro-vs-text">VS</div>
+    </div>
+    <div class="intro-fighter p2-side" id="intro-p2">
+      <img id="intro-img-p2" src="" alt="">
+      <div class="intro-fighter-name" id="intro-name-p2"></div>
+    </div>
+  </div>
+  <div class="intro-flash" id="intro-flash"></div>
 
   <main>
 
@@ -1005,10 +1220,16 @@
       if (!p1Data || !p2Data || battling) return;
       battling = true;
 
+      /* Inicia BGM sincronamente — dentro do gesto do usuário */
+      playBGM();
+
       const battleBtn = document.getElementById('battle-btn');
       battleBtn.disabled = true;
       battleBtn.classList.add('battling');
       battleBtn.textContent = 'Batalha em andamento...';
+
+      /* Animação de intro sincronizada com o som de encontro (2.5 s) */
+      await showBattleIntro();
 
       // Reset animations
       ['p1','p2'].forEach(s => {
@@ -1072,10 +1293,200 @@
         addLog('⚖ EMPATE! Nenhum Pokémon derrotou o outro.', 'system');
       }
 
+      stopBGM();
       battling = false;
       battleBtn.disabled = false;
       battleBtn.classList.remove('battling');
       battleBtn.textContent = '⚔ Revanche!';
+    }
+
+    /* ── BATTLE BGM (Web Audio — A menor 136 BPM) ──────── */
+    let bgmCtx    = null;
+    let bgmGain   = null;
+    let bgmMuted  = false;
+    let bgmActive = false;
+    let bgmTimer  = null;
+
+    const BEAT = 0.11; // 16ª nota
+
+    /* Melodia — 32 batidas (quadro A + quadro B) */
+    const MELODY = [
+      /* Quadro A — frase ascendente/descendente */
+      [880,1],[880,1],[784,1],[698,1],
+      [659,2],[698,1],[659,1],
+      [784,2],[880,2],
+      [784,1],[659,1],[587,2],
+      /* Quadro B — frase de resolução */
+      [523,1],[587,1],[659,1],[784,1],
+      [880,4],
+      [784,2],[659,2],
+      [440,4],
+    ];
+
+    /* Baixo — 32 batidas (sawtooth, 1 oitava abaixo) */
+    const BASS = [
+      [110,4],[110,4],[130,4],[110,4],
+      [174,4],[196,4],[165,4],[110,4],
+    ];
+
+    const LOOP_BEATS = MELODY.reduce((s, [, b]) => s + b, 0); // 32
+
+    function schedNote(ctx, gain, freq, t, dur, type, vol) {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.84);
+      osc.connect(g);
+      g.connect(gain);
+      osc.start(t);
+      osc.stop(t + dur);
+    }
+
+    function schedKick(ctx, gain, t) {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.18);
+      g.gain.setValueAtTime(0.38, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      osc.connect(g); g.connect(gain);
+      osc.start(t); osc.stop(t + 0.2);
+    }
+
+    function schedHat(ctx, gain, t) {
+      const len = Math.floor(ctx.sampleRate * 0.04);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d   = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource();
+      const flt = ctx.createBiquadFilter();
+      const g   = ctx.createGain();
+      flt.type = 'highpass'; flt.frequency.value = 5500;
+      g.gain.setValueAtTime(0.07, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      src.buffer = buf;
+      src.connect(flt); flt.connect(g); g.connect(gain);
+      src.start(t);
+    }
+
+    function scheduleBGM(t0) {
+      if (!bgmActive || !bgmCtx) return;
+
+      /* Melodia */
+      let t = t0;
+      for (const [freq, beats] of MELODY) {
+        schedNote(bgmCtx, bgmGain, freq, t, beats * BEAT, 'square', 0.26);
+        t += beats * BEAT;
+      }
+
+      /* Baixo */
+      t = t0;
+      for (const [freq, beats] of BASS) {
+        schedNote(bgmCtx, bgmGain, freq, t, beats * BEAT, 'sawtooth', 0.2);
+        t += beats * BEAT;
+      }
+
+      /* Percussão: kick a cada 8 beats, hihat a cada 2 beats */
+      for (let b = 0; b < LOOP_BEATS; b++) {
+        const bt = t0 + b * BEAT;
+        if (b % 8 === 0) schedKick(bgmCtx, bgmGain, bt);
+        if (b % 2 === 0) schedHat(bgmCtx, bgmGain, bt);
+      }
+
+      const loopDur = LOOP_BEATS * BEAT;
+      bgmTimer = setTimeout(() => scheduleBGM(t0 + loopDur), (loopDur - 0.15) * 1000);
+    }
+
+    function playBGM() {
+      if (bgmMuted || bgmActive) return;
+      bgmCtx  = new (window.AudioContext || window.webkitAudioContext)();
+      bgmGain = bgmCtx.createGain();
+      bgmGain.gain.value = Number(document.getElementById('bgm-slider').value) / 100;
+      bgmGain.connect(bgmCtx.destination);
+      bgmActive = true;
+      scheduleBGM(bgmCtx.currentTime + 0.05);
+    }
+
+    function stopBGM() {
+      bgmActive = false;
+      clearTimeout(bgmTimer);
+      if (bgmCtx) { bgmCtx.close(); bgmCtx = null; bgmGain = null; }
+    }
+
+    function toggleBGM() {
+      const btn = document.getElementById('bgm-btn');
+      bgmMuted = !bgmMuted;
+      if (bgmMuted) {
+        btn.classList.remove('playing');
+        stopBGM();
+      } else {
+        btn.classList.add('playing');
+        if (battling) playBGM();
+      }
+    }
+
+    document.getElementById('bgm-btn').addEventListener('click', toggleBGM);
+    document.getElementById('bgm-slider').addEventListener('input', e => {
+      if (bgmGain) bgmGain.gain.value = e.target.value / 100;
+    });
+
+    /* ── BATTLE INTRO ANIMATION (2.5 s) ─────────────── */
+    async function showBattleIntro() {
+      const overlay = document.getElementById('battle-intro');
+      const introP1 = document.getElementById('intro-p1');
+      const introP2 = document.getElementById('intro-p2');
+      const introVs = document.getElementById('intro-vs');
+      const flash   = document.getElementById('intro-flash');
+
+      document.getElementById('intro-img-p1').src = sprite(p1Data);
+      document.getElementById('intro-img-p2').src = sprite(p2Data);
+      document.getElementById('intro-name-p1').textContent = p1Data.name;
+      document.getElementById('intro-name-p2').textContent = p2Data.name;
+
+      introP1.classList.remove('ready');
+      introP2.classList.remove('ready');
+      introVs.classList.remove('show');
+      flash.classList.remove('on');
+      overlay.style.transition = 'opacity .42s ease';
+      overlay.style.opacity = '1';
+      overlay.classList.remove('hidden', 'fade-out');
+
+      await sleep(80);
+
+      /* P1 entra da esquerda + grito (t ≈ 80ms) */
+      introP1.classList.add('ready');
+      if (p1Data.cries?.latest) {
+        const a = new Audio(p1Data.cries.latest);
+        a.volume = 0.45;
+        a.play().catch(() => {});
+      }
+      await sleep(600);
+
+      /* P2 entra da direita + grito (t ≈ 680ms) */
+      introP2.classList.add('ready');
+      if (p2Data.cries?.latest) {
+        const a = new Audio(p2Data.cries.latest);
+        a.volume = 0.45;
+        a.play().catch(() => {});
+      }
+      await sleep(600);
+
+      /* VS aparece (t ≈ 1280ms) */
+      introVs.classList.add('show');
+      await sleep(680);
+
+      /* Flash + fade simultâneos (t ≈ 1960ms → 2500ms) */
+      flash.classList.add('on');
+      overlay.classList.add('fade-out');
+      await sleep(540);
+
+      overlay.classList.add('hidden');
+      flash.classList.remove('on');
+      introP1.classList.remove('ready');
+      introP2.classList.remove('ready');
+      introVs.classList.remove('show');
     }
 
     document.getElementById('battle-btn').addEventListener('click', startBattle);
@@ -1225,5 +1636,6 @@
     loadList();
   })();
   </script>
+
 </body>
 </html>
