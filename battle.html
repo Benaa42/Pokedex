@@ -1300,11 +1300,18 @@
         await sleep(700);
         showWinner(winner.side);
         addLog(`🏆 ${winner.name.toUpperCase()} VENCEU A BATALHA!`, 'win');
+        stopBGM();
+        await sleep(400);
+        const winnerData = winner.side === 'p1' ? p1Data : p2Data;
+        if (winnerData.cries?.latest) {
+          const cry = new Audio(winnerData.cries.latest);
+          cry.volume = 0.7;
+          cry.play().catch(() => {});
+        }
       } else {
         addLog('⚖ EMPATE! Nenhum Pokémon derrotou o outro.', 'system');
+        stopBGM();
       }
-
-      stopBGM();
       battling = false;
       battleBtn.disabled = false;
       battleBtn.classList.remove('battling');
