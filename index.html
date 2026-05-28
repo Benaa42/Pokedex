@@ -964,6 +964,48 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
+
+    /* ── MOBILE RESPONSIVO ─────────────────────────── */
+    @media (max-width: 640px) {
+      /* Header: busca vai para segunda linha */
+      .header-inner { padding: .65rem 1rem; gap: .65rem; }
+      .search-wrap { order: 3; flex: 1 0 100%; max-width: none; min-width: 0; }
+      .header-meta { gap: .65rem; }
+      #count-badge { display: none; }
+
+      /* Main */
+      main { padding: 1rem; }
+      .hero { margin-bottom: 1.5rem; }
+      .filters-wrap { margin-bottom: 1.25rem; }
+      .type-btn { padding: .38rem .72rem; }
+
+      /* Grid */
+      #grid { grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: .65rem; }
+      .poke-card { padding: 1rem .8rem .85rem; border-radius: 14px; }
+      .poke-img-wrap { width: 90px; height: 90px; }
+
+      /* Modal como bottom sheet */
+      .overlay { align-items: flex-end; padding: 0; }
+      .modal {
+        border-radius: 22px 22px 0 0;
+        max-width: 100%;
+        max-height: 93vh;
+        transform: translateY(60px);
+      }
+      .overlay.open .modal { transform: translateY(0) scale(1); }
+      .modal-band { min-height: 196px; padding: 1.4rem 1rem 1rem; }
+      .modal-sprite { width: 155px; height: 155px; right: .75rem; }
+      .audio-ctrl { right: 1rem; top: 1rem; }
+      .modal-body { padding: 1.25rem 1rem; gap: 1.25rem; }
+      .evo-section { padding: 1.25rem 1rem 1.75rem; }
+      .evo-card img { width: 62px; height: 62px; }
+      .load-wrap { margin-top: 1.75rem; }
+    }
+
+    @media (max-width: 520px) {
+      .modal-body { grid-template-columns: 1fr; }
+      .modal-sprite { width: 145px; height: 145px; }
+    }
   </style>
 </head>
 <body>

@@ -897,6 +897,47 @@
       18%  { opacity: .92; }
       100% { opacity: 0; }
     }
+
+    /* ── MOBILE RESPONSIVO ─────────────────────────── */
+    @media (max-width: 640px) {
+      /* Header compacto */
+      .header-inner { padding: .65rem 1rem; gap: .75rem; }
+      .back-link { font-size: 0; gap: 0; }
+      .back-link svg { width: 20px; height: 20px; }
+      .bgm-label { display: none; }
+      .bgm-slider { width: 48px; }
+
+      /* Main */
+      main { padding: 1rem; gap: 1rem; }
+
+      /* Arena */
+      .arena-field { padding: 1.5rem 1rem 0; min-height: 200px; }
+      .arena-sprite,
+      .fighter-placeholder {
+        width: clamp(88px, 21vw, 150px);
+        height: clamp(88px, 21vw, 150px);
+      }
+      .fighter.p1 { padding-left: .25rem; }
+      .fighter.p2 { padding-right: .25rem; }
+      .fighter-info { max-width: 160px; }
+      .hp-text { display: none; }
+      .arena-controls { padding: 1rem; }
+      #battle-btn { padding: .75rem 1.75rem; font-size: .68rem; }
+
+      /* Log */
+      #log { height: 200px; }
+      .log-entry { padding: .35rem 1rem; }
+      .log-entry.win { padding: .6rem 1rem; }
+
+      /* Intro overlay */
+      #battle-intro { padding: 0 3vw; }
+      .intro-fighter { width: 34vw; }
+      .intro-fighter img {
+        width: clamp(88px, 26vw, 160px);
+        height: clamp(88px, 26vw, 160px);
+      }
+      .intro-vs-text { font-size: clamp(1.8rem, 8vw, 4rem); }
+    }
   </style>
 </head>
 <body>
