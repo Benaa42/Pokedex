@@ -1076,11 +1076,11 @@
         <div class="modal-band">
           <div class="modal-band-bg" style="--mc:${hex(c,.28)}"></div>
           <div class="modal-band-circle"></div>
-          <img class="modal-sprite" id="modal-poke-img" src="${shinySrc}" alt="${p.name}" style="--mg:${hex(c,.45)}">
+          <img class="modal-sprite" id="modal-poke-img" src="${normalSrc}" alt="${p.name}" style="--mg:${hex(c,.45)}">
           <div class="modal-num">#${pad(p.id)}</div>
           <div class="modal-name">${p.name}</div>
           <div class="modal-types">${tags}</div>
-          <button class="shiny-toggle on" id="shiny-toggle">✦ Shiny</button>
+          <button class="shiny-toggle" id="shiny-toggle">✦ Shiny</button>
         </div>
         <div class="modal-body">
           <div>
@@ -1111,7 +1111,7 @@
       }, 80);
 
       // Shiny toggle
-      let isShiny = true;
+      let isShiny = false;
       document.getElementById('shiny-toggle').addEventListener('click', () => {
         isShiny = !isShiny;
         const img = document.getElementById('modal-poke-img');
@@ -1122,7 +1122,7 @@
           img.style.opacity = '1';
         }, 150);
         btn.classList.toggle('on', isShiny);
-        btn.textContent = isShiny ? '✦ Shiny' : '✦ Normal';
+        btn.textContent = isShiny ? '✦ Normal' : '✦ Shiny';
       });
     }
 
