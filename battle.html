@@ -242,9 +242,18 @@
 
     .result-item .r-num {
       font-family: 'Orbitron', monospace;
-      font-size: .58rem;
-      color: var(--muted);
-      letter-spacing: .12em;
+      font-size: .65rem;
+      color: rgba(255,255,255,.52);
+      letter-spacing: .16em;
+      flex-shrink: 0;
+    }
+
+    .sel-num {
+      font-family: 'Orbitron', monospace;
+      font-size: .62rem;
+      color: rgba(255,255,255,.48);
+      letter-spacing: .2em;
+      margin-bottom: .2rem;
     }
 
     /* Selected Pokémon display */
@@ -958,6 +967,7 @@
         </div>
         <div class="selected-display" id="display-p1">
           <img class="sel-sprite" id="sprite-p1" src="" alt="">
+          <div class="sel-num" id="num-p1"></div>
           <div class="sel-name" id="name-p1"></div>
           <div class="sel-types" id="types-p1"></div>
           <div class="sel-stats" id="stats-p1"></div>
@@ -990,6 +1000,7 @@
         </div>
         <div class="selected-display" id="display-p2">
           <img class="sel-sprite" id="sprite-p2" src="" alt="">
+          <div class="sel-num" id="num-p2"></div>
           <div class="sel-name" id="name-p2"></div>
           <div class="sel-types" id="types-p2"></div>
           <div class="sel-stats" id="stats-p2"></div>
@@ -1300,119 +1311,23 @@
       battleBtn.textContent = '⚔ Revanche!';
     }
 
-    /* ── BATTLE BGM (Web Audio — A menor 136 BPM) ──────── */
-    let bgmCtx    = null;
-    let bgmGain   = null;
-    let bgmMuted  = false;
-    let bgmActive = false;
-    let bgmTimer  = null;
-
-    const BEAT = 0.11; // 16ª nota
-
-    /* Melodia — 32 batidas (quadro A + quadro B) */
-    const MELODY = [
-      /* Quadro A — frase ascendente/descendente */
-      [880,1],[880,1],[784,1],[698,1],
-      [659,2],[698,1],[659,1],
-      [784,2],[880,2],
-      [784,1],[659,1],[587,2],
-      /* Quadro B — frase de resolução */
-      [523,1],[587,1],[659,1],[784,1],
-      [880,4],
-      [784,2],[659,2],
-      [440,4],
-    ];
-
-    /* Baixo — 32 batidas (sawtooth, 1 oitava abaixo) */
-    const BASS = [
-      [110,4],[110,4],[130,4],[110,4],
-      [174,4],[196,4],[165,4],[110,4],
-    ];
-
-    const LOOP_BEATS = MELODY.reduce((s, [, b]) => s + b, 0); // 32
-
-    function schedNote(ctx, gain, freq, t, dur, type, vol) {
-      const osc = ctx.createOscillator();
-      const g   = ctx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(vol, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.84);
-      osc.connect(g);
-      g.connect(gain);
-      osc.start(t);
-      osc.stop(t + dur);
-    }
-
-    function schedKick(ctx, gain, t) {
-      const osc = ctx.createOscillator();
-      const g   = ctx.createGain();
-      osc.frequency.setValueAtTime(150, t);
-      osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.18);
-      g.gain.setValueAtTime(0.38, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-      osc.connect(g); g.connect(gain);
-      osc.start(t); osc.stop(t + 0.2);
-    }
-
-    function schedHat(ctx, gain, t) {
-      const len = Math.floor(ctx.sampleRate * 0.04);
-      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-      const d   = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      const src = ctx.createBufferSource();
-      const flt = ctx.createBiquadFilter();
-      const g   = ctx.createGain();
-      flt.type = 'highpass'; flt.frequency.value = 5500;
-      g.gain.setValueAtTime(0.07, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
-      src.buffer = buf;
-      src.connect(flt); flt.connect(g); g.connect(gain);
-      src.start(t);
-    }
-
-    function scheduleBGM(t0) {
-      if (!bgmActive || !bgmCtx) return;
-
-      /* Melodia */
-      let t = t0;
-      for (const [freq, beats] of MELODY) {
-        schedNote(bgmCtx, bgmGain, freq, t, beats * BEAT, 'square', 0.26);
-        t += beats * BEAT;
-      }
-
-      /* Baixo */
-      t = t0;
-      for (const [freq, beats] of BASS) {
-        schedNote(bgmCtx, bgmGain, freq, t, beats * BEAT, 'sawtooth', 0.2);
-        t += beats * BEAT;
-      }
-
-      /* Percussão: kick a cada 8 beats, hihat a cada 2 beats */
-      for (let b = 0; b < LOOP_BEATS; b++) {
-        const bt = t0 + b * BEAT;
-        if (b % 8 === 0) schedKick(bgmCtx, bgmGain, bt);
-        if (b % 2 === 0) schedHat(bgmCtx, bgmGain, bt);
-      }
-
-      const loopDur = LOOP_BEATS * BEAT;
-      bgmTimer = setTimeout(() => scheduleBGM(t0 + loopDur), (loopDur - 0.15) * 1000);
-    }
+    /* ── BATTLE BGM ─────────────────────────────────── */
+    let bgmAudio = null;
+    let bgmMuted = false;
 
     function playBGM() {
-      if (bgmMuted || bgmActive) return;
-      bgmCtx  = new (window.AudioContext || window.webkitAudioContext)();
-      bgmGain = bgmCtx.createGain();
-      bgmGain.gain.value = Number(document.getElementById('bgm-slider').value) / 100;
-      bgmGain.connect(bgmCtx.destination);
-      bgmActive = true;
-      scheduleBGM(bgmCtx.currentTime + 0.05);
+      if (bgmMuted) return;
+      if (!bgmAudio) {
+        bgmAudio = new Audio('https://www.myinstants.com/media/sounds/pokemon-battle.mp3');
+        bgmAudio.loop = true;
+        bgmAudio.volume = Number(document.getElementById('bgm-slider').value) / 100;
+      }
+      bgmAudio.currentTime = 0;
+      bgmAudio.play().catch(() => {});
     }
 
     function stopBGM() {
-      bgmActive = false;
-      clearTimeout(bgmTimer);
-      if (bgmCtx) { bgmCtx.close(); bgmCtx = null; bgmGain = null; }
+      if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; }
     }
 
     function toggleBGM() {
@@ -1423,13 +1338,13 @@
         stopBGM();
       } else {
         btn.classList.add('playing');
-        if (battling) playBGM();
+        if (battling) bgmAudio?.play().catch(() => {});
       }
     }
 
     document.getElementById('bgm-btn').addEventListener('click', toggleBGM);
     document.getElementById('bgm-slider').addEventListener('input', e => {
-      if (bgmGain) bgmGain.gain.value = e.target.value / 100;
+      if (bgmAudio) bgmAudio.volume = e.target.value / 100;
     });
 
     /* ── BATTLE INTRO ANIMATION (2.5 s) ─────────────── */
@@ -1504,6 +1419,7 @@
 
       document.getElementById(`sprite-${side}`).src = imgSrc;
       document.getElementById(`sprite-${side}`).style.filter = `drop-shadow(0 6px 20px ${hex(c,.4)})`;
+      document.getElementById(`num-${side}`).textContent = '#' + pad(data.id);
       document.getElementById(`name-${side}`).textContent = data.name;
       document.getElementById(`types-${side}`).innerHTML = data.types.map(t => typeTag(t.type.name)).join('');
 
@@ -1542,6 +1458,7 @@
       document.getElementById(`search-${side}`).value = '';
       renderResults(side, '');
 
+      document.getElementById(`num-${side}`).textContent = '';
       document.getElementById(`arena-name-${side}`).textContent = '—';
       document.getElementById(`placeholder-${side}`).style.display = '';
       document.getElementById(`arena-sprite-${side}`).style.display = 'none';
