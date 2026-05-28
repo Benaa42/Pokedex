@@ -477,9 +477,9 @@
 
     .hp-text {
       font-family: 'Orbitron', monospace;
-      font-size: .58rem;
-      color: var(--muted);
-      letter-spacing: .08em;
+      font-size: .65rem;
+      color: rgba(255,255,255,.52);
+      letter-spacing: .14em;
       white-space: nowrap;
     }
 
@@ -1374,7 +1374,7 @@
       introP1.classList.add('ready');
       if (p1Data.cries?.latest) {
         const a = new Audio(p1Data.cries.latest);
-        a.volume = 0.45;
+        a.volume = 0.18;
         a.play().catch(() => {});
       }
       await sleep(600);
@@ -1383,7 +1383,7 @@
       introP2.classList.add('ready');
       if (p2Data.cries?.latest) {
         const a = new Audio(p2Data.cries.latest);
-        a.volume = 0.45;
+        a.volume = 0.18;
         a.play().catch(() => {});
       }
       await sleep(600);
