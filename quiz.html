@@ -1785,7 +1785,15 @@
     }
 
     /* ── INÍCIO CRONOMETRADO ─────────────────────── */
+    const sfxCountdown2 = new Audio('BGM/Countdown2.mp3');
+    sfxCountdown2.volume = 0.6;
+
     function showCountdown(label, callback) {
+      /* Toca Countdown2.mp3 apenas para desafios */
+      if (label.includes('Desafio') || label.includes('Respondendo')) {
+        sfxCountdown2.currentTime = 0;
+        sfxCountdown2.play().catch(() => {});
+      }
       const overlay = document.createElement('div');
       overlay.className = 'countdown-overlay';
       overlay.innerHTML = `<div class="countdown-num" id="cd-num">3</div><div class="countdown-lbl">${label}</div>`;
@@ -2168,7 +2176,12 @@
         });
     }
 
+    const sfxAccepter = new Audio('BGM/accepter2.mp3');
+    sfxAccepter.volume = 0.7;
+
     function showNotifToast(notif, notifId) {
+      sfxAccepter.currentTime = 0;
+      sfxAccepter.play().catch(() => {});
       const toast = document.createElement('div');
       toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--surface);border:1px solid rgba(248,88,136,.4);border-radius:14px;padding:.85rem 1.1rem;font-family:Rajdhani,sans-serif;font-size:.88rem;font-weight:600;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.5);max-width:280px;animation:hint-in .3s ease;';
       toast.innerHTML = `<div style="font-family:Orbitron,monospace;font-size:.46rem;letter-spacing:.16em;color:var(--p1);margin-bottom:.35rem">⚔ DESAFIO RECEBIDO</div><div>${notif.from.username} te desafiou!</div>`;

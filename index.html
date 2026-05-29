@@ -126,34 +126,9 @@
       display: flex;
       align-items: center;
       gap: .4rem;
-      background: linear-gradient(130deg, rgba(248,208,48,.18) 0%, rgba(112,56,248,.14) 100%);
-      border: 1px solid rgba(248,208,48,.4);
+      background: linear-gradient(130deg, rgba(248,208,48,.22) 0%, rgba(112,56,248,.18) 100%);
+      border: 1px solid rgba(248,208,48,.5);
       color: #F8D030;
-      font-family: 'Orbitron', monospace;
-      font-size: .6rem;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      padding: .55rem 1.2rem;
-      border-radius: 50px;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: all .25s;
-    }
-
-    .quiz-link:hover {
-      background: linear-gradient(130deg, rgba(248,208,48,.35) 0%, rgba(112,56,248,.25) 100%);
-      border-color: rgba(248,208,48,.8);
-      box-shadow: 0 0 22px rgba(248,208,48,.3);
-      transform: scale(1.05);
-    }
-
-    .battle-link {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      background: linear-gradient(130deg, rgba(248,88,136,.22) 0%, rgba(112,56,248,.18) 100%);
-      border: 1px solid rgba(248,88,136,.5);
-      color: #F85888;
       font-family: 'Orbitron', monospace;
       font-size: .6rem;
       letter-spacing: .14em;
@@ -165,38 +140,63 @@
       transition: all .25s;
       position: relative;
       overflow: hidden;
-      animation: arena-glow 2.4s ease-in-out infinite;
+      animation: quiz-glow 2.4s ease-in-out infinite;
     }
 
-    @keyframes arena-glow {
-      0%, 100% { box-shadow: 0 0 8px rgba(248,88,136,.25); }
-      50%       { box-shadow: 0 0 22px rgba(248,88,136,.55), 0 0 40px rgba(248,88,136,.15); }
+    @keyframes quiz-glow {
+      0%, 100% { box-shadow: 0 0 8px rgba(248,208,48,.25); }
+      50%       { box-shadow: 0 0 22px rgba(248,208,48,.55), 0 0 40px rgba(248,208,48,.15); }
     }
 
-    .battle-link::after {
+    .quiz-link::after {
       content: '';
       position: absolute;
       top: 0; left: -100%;
       width: 55%;
       height: 100%;
       background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
-      animation: arena-shimmer 2.4s ease-in-out infinite;
+      animation: quiz-shimmer 2.4s ease-in-out infinite;
       pointer-events: none;
     }
 
-    @keyframes arena-shimmer {
+    @keyframes quiz-shimmer {
       0%       { left: -100%; }
       55%, 100% { left: 170%; }
     }
 
-    .battle-link:hover {
-      background: linear-gradient(130deg, rgba(248,88,136,.42) 0%, rgba(112,56,248,.32) 100%);
-      border-color: rgba(248,88,136,.9);
-      box-shadow: 0 0 30px rgba(248,88,136,.5), 0 0 60px rgba(248,88,136,.18);
+    .quiz-link:hover {
+      background: linear-gradient(130deg, rgba(248,208,48,.42) 0%, rgba(112,56,248,.32) 100%);
+      border-color: rgba(248,208,48,.9);
+      box-shadow: 0 0 30px rgba(248,208,48,.5), 0 0 60px rgba(248,208,48,.18);
       transform: scale(1.06);
       animation: none;
     }
-    .battle-link:hover::after { display: none; }
+    .quiz-link:hover::after { display: none; }
+
+    .battle-link {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      background: linear-gradient(130deg, rgba(248,88,136,.16) 0%, rgba(112,56,248,.12) 100%);
+      border: 1px solid rgba(248,88,136,.35);
+      color: #F85888;
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      padding: .55rem 1.3rem .55rem 1rem;
+      border-radius: 50px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all .25s;
+    }
+
+    .battle-link:hover {
+      background: linear-gradient(130deg, rgba(248,88,136,.35) 0%, rgba(112,56,248,.25) 100%);
+      border-color: rgba(248,88,136,.75);
+      box-shadow: 0 0 20px rgba(248,88,136,.3);
+      transform: scale(1.04);
+    }
 
     #random-btn {
       display: flex;
@@ -1017,6 +1017,34 @@
     }
     .logout-header-btn:hover { border-color: rgba(248,80,80,.4); color: #f87171; }
 
+    /* ── PAINEL DE NOTIFICAÇÕES ─────────────────────── */
+    .notif-panel {
+      max-width: 1200px; margin: 0 auto 1rem; padding: 0 1.5rem;
+      position: relative; z-index: 2;
+    }
+    .notif-item {
+      background: var(--surface);
+      border: 1px solid rgba(248,88,136,.25);
+      border-radius: 14px; padding: .75rem 1.1rem;
+      display: flex; align-items: center; gap: .85rem;
+      margin-bottom: .45rem; animation: notif-in .3s ease;
+      cursor: pointer; transition: background .15s;
+    }
+    @keyframes notif-in { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    .notif-item:hover { background: rgba(248,88,136,.06); }
+    .notif-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .notif-text { flex: 1; font-size: .88rem; font-weight: 600; color: var(--text); }
+    .notif-sub  { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: .13em; color: var(--muted); margin-top: .08rem; }
+    .notif-action {
+      background: linear-gradient(130deg,rgba(248,88,136,.22),rgba(112,56,248,.18));
+      border: 1px solid rgba(248,88,136,.45); color: var(--p1);
+      font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .13em;
+      padding: .38rem .9rem; border-radius: 50px; cursor: pointer; transition: all .18s; flex-shrink: 0;
+    }
+    .notif-action:hover { border-color: rgba(248,88,136,.8); }
+    .notif-dismiss { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; padding: .2rem .4rem; transition: color .15s; flex-shrink: 0; }
+    .notif-dismiss:hover { color: #f87171; }
+
     /* ── MOBILE RESPONSIVO ─────────────────────────── */
     @media (max-width: 640px) {
       /* Header: busca vai para segunda linha */
@@ -1113,6 +1141,9 @@
       </div>
     </div>
   </header>
+
+  <!-- Painel de notificações (visível apenas quando logado) -->
+  <div class="notif-panel" id="notif-panel" style="display:none"></div>
 
   <main>
     <div class="hero">
@@ -1593,5 +1624,63 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="js/firebase-init.js"></script>
   <script src="js/auth-header.js"></script>
+  <script>
+  // ── NOTIFICAÇÕES NA INDEX ─────────────────────────
+  var sfxAccepter = new Audio('BGM/accepter2.mp3');
+  sfxAccepter.volume = 0.7;
+  var notifUnsubIdx = null;
+  var shownNotifs   = new Set();
+
+  auth.onAuthStateChanged(function(user) {
+    var panel = document.getElementById('notif-panel');
+    if (!panel) return;
+    if (!user) { panel.style.display = 'none'; if (notifUnsubIdx) notifUnsubIdx(); return; }
+
+    panel.style.display = '';
+
+    notifUnsubIdx = db.collection('users').doc(user.uid)
+      .collection('notifications')
+      .where('read', '==', false)
+      .onSnapshot(function(snap) {
+        panel.innerHTML = '';
+        snap.forEach(function(doc) {
+          var n = doc.data();
+          var isNew = !shownNotifs.has(doc.id);
+          if (isNew) { shownNotifs.add(doc.id); sfxAccepter.currentTime = 0; sfxAccepter.play().catch(function(){}); }
+
+          var item = document.createElement('div');
+          item.className = 'notif-item';
+
+          var icon   = n.type === 'challenge' ? '⚔' : '🔔';
+          var title  = n.type === 'challenge' ? n.from.username + ' te desafiou!' : (n.title || 'Nova notificação');
+          var lvLbl  = n.level ? { 1:'Normal', 2:'Difícil', 3:'Extremo' }[n.level] || '' : '';
+          var sub    = n.type === 'challenge' ? 'Desafio · ' + lvLbl + ' · 1 minuto' : '';
+
+          item.innerHTML =
+            '<div class="notif-icon">' + icon + '</div>' +
+            '<div class="notif-text">' + title +
+              (sub ? '<div class="notif-sub">' + sub + '</div>' : '') +
+            '</div>' +
+            (n.type === 'challenge' ? '<button class="notif-action" data-cid="' + n.challengeId + '" data-level="' + (n.level||1) + '">Responder</button>' : '') +
+            '<button class="notif-dismiss" data-id="' + doc.id + '" title="Dispensar">×</button>';
+
+          item.querySelector('.notif-dismiss').addEventListener('click', function(e) {
+            e.stopPropagation();
+            db.collection('users').doc(user.uid).collection('notifications').doc(this.dataset.id).update({ read: true }).catch(function(){});
+          });
+
+          var respBtn = item.querySelector('.notif-action');
+          if (respBtn) {
+            respBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              window.location.href = 'quiz.html#desafio-' + this.dataset.cid + '-' + this.dataset.level;
+            });
+          }
+
+          panel.appendChild(item);
+        });
+      });
+  });
+  </script>
 </body>
 </html>

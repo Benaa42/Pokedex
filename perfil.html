@@ -164,6 +164,27 @@
       letter-spacing: .18em; color: var(--muted);
     }
 
+    /* Challenge history */
+    .ch-item {
+      display: flex; align-items: center; gap: .85rem;
+      padding: .88rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    .ch-item:last-child { border-bottom: none; }
+    .ch-item:hover { background: rgba(255,255,255,.02); }
+    .ch-result {
+      font-family: 'Orbitron', monospace; font-weight: 900; font-size: .55rem;
+      letter-spacing: .12em; padding: .22rem .55rem; border-radius: 50px; flex-shrink: 0;
+    }
+    .ch-result.win  { background: rgba(74,222,128,.15); color: #4ade80; }
+    .ch-result.lose { background: rgba(248,80,80,.12);  color: #f87171; }
+    .ch-result.draw { background: rgba(248,208,48,.12); color: #F8D030; }
+    .ch-result.pend { background: rgba(104,144,240,.12); color: #6890F0; }
+    .ch-info { flex: 1; min-width: 0; }
+    .ch-opp  { font-size: .9rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ch-meta { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: .14em; color: var(--muted); margin-top: .08rem; }
+    .ch-scores { font-family: 'Orbitron', monospace; font-weight: 900; font-size: .88rem; color: #F8D030; flex-shrink: 0; text-align: right; }
+
     /* ── MOBILE ─────────────────────────────────── */
     @media (max-width: 640px) {
       main { padding: 1rem; }
@@ -213,7 +234,21 @@
         <div class="stat-box"><div class="stat-lbl">Média</div><div class="stat-val" id="sv-avg">0</div></div>
       </div>
 
-      <div class="section-label">Histórico recente</div>
+      <!-- Stats de Desafios -->
+      <div class="section-label" style="margin-top:.85rem">Desafios</div>
+      <div class="stats-grid" id="challenge-stats-grid" style="display:none">
+        <div class="stat-box"><div class="stat-lbl">Vitórias</div><div class="stat-val" id="sv-wins" style="color:#4ade80">0</div></div>
+        <div class="stat-box"><div class="stat-lbl">Derrotas</div><div class="stat-val" id="sv-losses" style="color:#f87171">0</div></div>
+        <div class="stat-box"><div class="stat-lbl">Empates</div><div class="stat-val" id="sv-draws" style="color:#F8D030">0</div></div>
+      </div>
+      <div id="challenge-stats-empty" class="hist-empty" style="padding:1rem">Nenhum desafio disputado ainda</div>
+
+      <div class="section-label" style="margin-top:1rem">Histórico de desafios</div>
+      <div class="history-list" id="challenge-history-list">
+        <div class="hist-empty">Nenhum desafio registrado ainda</div>
+      </div>
+
+      <div class="section-label" style="margin-top:1rem">Partidas do quiz clássico</div>
       <div class="history-list" id="history-list">
         <div class="hist-empty">Nenhuma partida registrada ainda</div>
       </div>
@@ -290,6 +325,63 @@
           listEl.appendChild(item);
         });
       }
+
+      // Stats de Desafios
+      var rankDoc = await db.collection('challengeRankings').doc(user.uid).get().catch(function(){return null;});
+      if (rankDoc && rankDoc.exists) {
+        var r = rankDoc.data();
+        var wins   = r.wins   || 0;
+        var losses = r.losses || 0;
+        var draws  = r.draws  || 0;
+        if (wins + losses + draws > 0) {
+          document.getElementById('challenge-stats-empty').style.display = 'none';
+          document.getElementById('challenge-stats-grid').style.display  = '';
+          document.getElementById('sv-wins').textContent   = wins;
+          document.getElementById('sv-losses').textContent = losses;
+          document.getElementById('sv-draws').textContent  = draws;
+        }
+      }
+
+      // Histórico de Desafios
+      var lvLabels = { 1:'Normal', 2:'Difícil', 3:'Extremo' };
+      var chListEl = document.getElementById('challenge-history-list');
+      try {
+        var [snapChall, snapOpp] = await Promise.all([
+          db.collection('challenges').where('challenger.uid','==',user.uid).orderBy('createdAt','desc').limit(10).get(),
+          db.collection('challenges').where('opponent.uid','==',user.uid).orderBy('createdAt','desc').limit(10).get(),
+        ]);
+        var chDocs = {};
+        snapChall.forEach(function(d){ chDocs[d.id] = d; });
+        snapOpp.forEach(function(d){   chDocs[d.id] = d; });
+        var allCh = Object.values(chDocs).sort(function(a,b){
+          return (b.data().createdAt?.seconds||0) - (a.data().createdAt?.seconds||0);
+        }).slice(0, 15);
+        if (allCh.length > 0) {
+          chListEl.innerHTML = '';
+          allCh.forEach(function(doc) {
+            var ch = doc.data();
+            var isChallenger = ch.challenger.uid === user.uid;
+            var opp      = isChallenger ? ch.opponent.username : ch.challenger.username;
+            var myScore  = isChallenger ? (ch.round1Score ?? '—') : (ch.round2Score ?? '—');
+            var oppScore = isChallenger ? (ch.round2Score ?? '—') : (ch.round1Score ?? '—');
+            var resultCls = 'pend', resultLbl = 'Aguard.';
+            if (ch.status === 'complete') {
+              if (ch.winner === user.uid)   { resultCls = 'win';  resultLbl = 'Vitória'; }
+              else if (ch.winner === 'draw'){ resultCls = 'draw'; resultLbl = 'Empate';  }
+              else                           { resultCls = 'lose'; resultLbl = 'Derrota'; }
+            }
+            var date = ch.createdAt ? ch.createdAt.toDate().toLocaleDateString('pt-BR') : '—';
+            var item = document.createElement('div');
+            item.className = 'ch-item';
+            item.innerHTML =
+              '<div class="ch-result ' + resultCls + '">' + resultLbl + '</div>' +
+              '<div class="ch-info"><div class="ch-opp">vs ' + opp + '</div>' +
+              '<div class="ch-meta">' + (lvLabels[ch.level]||'') + ' · ' + date + '</div></div>' +
+              '<div class="ch-scores">' + myScore + ' × ' + oppScore + '</div>';
+            chListEl.appendChild(item);
+          });
+        }
+      } catch(e) {}
 
       // Logout
       document.getElementById('logout-btn').addEventListener('click', async function() {
