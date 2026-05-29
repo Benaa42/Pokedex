@@ -1538,14 +1538,25 @@
         totalScore += roundScore;
         playCorrect();
         if (currentMode !== 'classico') {
-          /* Modo cronometrado: acumula e vai pro próximo imediatamente */
+          /* Modo cronometrado: revela o Pokémon brevemente antes de avançar */
           timerCorrect++;
           timerScore += roundScore;
           updateTimerDisplay();
           showFeedback('✓ +' + roundScore + ' pts', 'correct');
           endInputs();
           renderHints();
-          setTimeout(() => { if (timerInterval) startRound(); }, 350);
+          /* Revela o sprite antes de ir ao próximo */
+          if (currentLevel === 3) {
+            if (!guessedA) revealDuo('a');
+            if (!guessedB) revealDuo('b');
+          } else {
+            const elR = document.getElementById('mystery-sprite');
+            elR.classList.add('revealed');
+            const lblR = document.getElementById('mystery-label');
+            lblR.textContent = dataA.name.toUpperCase();
+            lblR.className = 'mystery-label revealed-name';
+          }
+          setTimeout(() => { if (timerInterval) startRound(); }, 1200);
           return;
         }
         showFeedback(currentLevel === 3 ? '🏆 Os dois corretos!' : '✓ Correto!', 'correct');
@@ -2196,9 +2207,8 @@
     /* Adiciona badge de notificação ao header-auth-user */
     auth.onAuthStateChanged(user => {
       if (user) {
-        startNotifListener(user.uid);
         loadPendingChallenges();
-        /* Injeta badge no link do perfil */
+        /* Injeta badge ANTES de iniciar o listener (dot precisa existir) */
         const usernameLink = document.querySelector('.header-username-link');
         if (usernameLink && !document.getElementById('notif-dot')) {
           const wrap = document.createElement('div');
@@ -2209,6 +2219,8 @@
           dot.id = 'notif-dot'; dot.className = 'notif-dot';
           wrap.appendChild(dot);
         }
+        /* Inicia listener APÓS o dot estar no DOM */
+        startNotifListener(user.uid);
       } else {
         if (notifUnsubscribe) { notifUnsubscribe(); notifUnsubscribe = null; }
       }

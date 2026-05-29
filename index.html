@@ -1643,6 +1643,7 @@
       .where('read', '==', false)
       .onSnapshot(function(snap) {
         panel.innerHTML = '';
+        panel.style.display = snap.empty ? 'none' : '';
         snap.forEach(function(doc) {
           var n = doc.data();
           var isNew = !shownNotifs.has(doc.id);
