@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUIZ — Quem é este Pokémon?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: #0e0e1c;
+      --surface-2: #15152a;
+      --text: #e2e2f0;
+      --muted: #5a5a7a;
+      --border: rgba(255,255,255,0.06);
+      --p1: #F85888;
+      --p2: #6890F0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 40% at 50% -10%, rgba(248,208,48,.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 90%, rgba(248,88,136,.09) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(112,56,248,.07) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(7,7,15,.88);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 860px; margin: 0 auto; padding: .9rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .back-link {
+      display: flex; align-items: center; gap: .4rem;
+      color: var(--muted); text-decoration: none;
+      font-family: 'Orbitron', monospace; font-size: .6rem;
+      letter-spacing: .15em; text-transform: uppercase;
+      transition: color .2s; flex-shrink: 0;
+    }
+    .back-link:hover { color: var(--text); }
+    .logo {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: clamp(.85rem, 2vw, 1.2rem); letter-spacing: .1em;
+      background: linear-gradient(130deg, #F8D030, #F85888);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-right: auto;
+    }
+
+    /* ── MAIN ───────────────────────────────────── */
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
+
+    /* ── SETUP ──────────────────────────────────── */
+    #game-screen { display: none; }
+
+    .setup-title {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 3rem); text-align: center;
+      line-height: 1; margin-bottom: .6rem;
+      background: linear-gradient(130deg, #F8D030, #F85888);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .setup-sub {
+      text-align: center; color: var(--muted); font-size: .95rem;
+      font-weight: 500; letter-spacing: .05em; margin-bottom: 2.5rem;
+    }
+    .section-label {
+      font-family: 'Orbitron', monospace; font-size: .53rem;
+      letter-spacing: .22em; color: var(--muted); text-transform: uppercase; margin-bottom: .85rem;
+    }
+
+    /* Gen grid */
+    .gen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: .65rem; margin-bottom: 1.5rem; }
+    .gen-card {
+      background: var(--surface); border: 2px solid var(--border); border-radius: 16px;
+      padding: .9rem 1.05rem .85rem; cursor: pointer; transition: all .2s;
+      position: relative; overflow: hidden; user-select: none;
+    }
+    .gen-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 75% 20%, var(--gc, transparent) 0%, transparent 65%);
+      opacity: 0; transition: opacity .2s; pointer-events: none;
+    }
+    .gen-card.selected { border-color: var(--gc-border); box-shadow: 0 0 16px var(--gc-glow); }
+    .gen-card.selected::before { opacity: 1; }
+    .gen-check {
+      position: absolute; top: .7rem; right: .7rem; width: 20px; height: 20px;
+      border-radius: 50%; border: 2px solid rgba(255,255,255,.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .65rem; transition: all .2s; color: transparent;
+    }
+    .gen-card.selected .gen-check { background: var(--gc-border); border-color: transparent; color: #fff; }
+    .gen-num { font-family: 'Orbitron', monospace; font-weight: 900; font-size: .95rem; letter-spacing: .07em; color: rgba(255,255,255,.55); position: relative; }
+    .gen-card.selected .gen-num { color: var(--gc-text); }
+    .gen-region { font-size: .75rem; font-weight: 600; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; margin: .06rem 0 .3rem; position: relative; }
+    .gen-count { font-family: 'Orbitron', monospace; font-size: .52rem; letter-spacing: .12em; color: var(--muted); position: relative; }
+
+    /* Difficulty */
+    .diff-row { display: flex; gap: .65rem; margin-bottom: 1.75rem; }
+    .diff-btn {
+      flex: 1; background: var(--surface); border: 2px solid var(--border);
+      border-radius: 16px; padding: .95rem 1rem; cursor: pointer; transition: all .2s;
+      text-align: left; display: flex; flex-direction: column; gap: .12rem;
+    }
+    .diff-btn:hover { border-color: rgba(248,208,48,.28); background: rgba(248,208,48,.04); }
+    .diff-btn.selected { border-color: rgba(248,208,48,.55); background: rgba(248,208,48,.05); box-shadow: 0 0 18px rgba(248,208,48,.14); }
+    .diff-lv { font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .22em; color: var(--muted); }
+    .diff-name { font-family: 'Orbitron', monospace; font-weight: 900; font-size: .85rem; letter-spacing: .06em; color: var(--text); }
+    .diff-desc { font-size: .72rem; font-weight: 500; color: var(--muted); }
+    .diff-btn.selected .diff-name { color: #F8D030; }
+
+    .pool-info { text-align: center; font-family: 'Orbitron', monospace; font-size: .62rem; letter-spacing: .18em; color: var(--muted); margin-bottom: 1.75rem; }
+    .pool-info strong { color: var(--text); font-size: .75rem; }
+
+    #start-btn {
+      display: block; margin: 0 auto;
+      background: linear-gradient(130deg, rgba(248,208,48,.22), rgba(248,88,136,.18));
+      border: 1px solid rgba(248,208,48,.45); color: #F8D030;
+      font-family: 'Orbitron', monospace; font-weight: 900; font-size: .78rem;
+      letter-spacing: .22em; text-transform: uppercase; padding: 1rem 3.5rem;
+      border-radius: 50px; cursor: pointer; transition: all .2s;
+      animation: start-glow 2.2s ease-in-out infinite;
+    }
+    @keyframes start-glow {
+      0%, 100% { box-shadow: 0 0 10px rgba(248,208,48,.18); }
+      50%       { box-shadow: 0 0 28px rgba(248,208,48,.42), 0 0 50px rgba(248,88,136,.1); }
+    }
+    #start-btn:hover:not(:disabled) { background: linear-gradient(130deg, rgba(248,208,48,.38), rgba(248,88,136,.3)); border-color: rgba(248,208,48,.8); transform: scale(1.04); animation: none; box-shadow: 0 0 32px rgba(248,208,48,.4); }
+    #start-btn:disabled { opacity: .4; cursor: not-allowed; animation: none; transform: none; }
+
+    /* ── GAME SCREEN ─────────────────────────────── */
+    .score-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .65rem; margin-bottom: 1.4rem; }
+    .score-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .8rem .7rem; text-align: center; }
+    .s-label { font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; margin-bottom: .28rem; }
+    .s-val { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 1.25rem; line-height: 1; }
+    #val-round  { color: #F8D030; }
+    #val-total  { color: #a855f7; }
+    #val-hits   { color: #4ade80; }
+    #val-streak { color: #F85888; }
+    @keyframes score-drop { 0% { transform: scale(1.18); color: #f87171; } 100% { transform: scale(1); color: #F8D030; } }
+    @keyframes score-gain { 0% { transform: scale(1.22); } 100% { transform: scale(1); } }
+
+    /* Mystery area */
+    .mystery-area {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 24px; padding: 2.5rem 2rem 2rem;
+      margin-bottom: 1rem; text-align: center; position: relative; overflow: hidden;
+    }
+    .mystery-area::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 65% 50% at 50% 0%, rgba(248,208,48,.06) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .round-badge { position: absolute; top: 1rem; left: 1.25rem; font-family: 'Orbitron', monospace; font-size: .5rem; letter-spacing: .2em; color: var(--muted); }
+    .level-badge { position: absolute; top: 1rem; right: 1.25rem; font-family: 'Orbitron', monospace; font-size: .5rem; letter-spacing: .18em; color: var(--muted); }
+
+    /* Single sprite — level 1 & 2 */
+    .mystery-single { display: block; }
+    .mystery-sprite-wrap { display: inline-block; position: relative; margin-bottom: 1.2rem; overflow: visible; }
+
+    .mystery-sprite {
+      width: clamp(160px, 24vw, 240px);
+      height: clamp(160px, 24vw, 240px);
+      object-fit: contain; display: block; position: relative; z-index: 1;
+      /* filter controlled entirely via inline style */
+      transition: filter 0.75s ease, opacity .3s ease;
+    }
+    /* Revealed: override any inline filter */
+    .mystery-sprite.revealed { filter: none !important; transform: none !important; }
+
+    .mystery-glow {
+      position: absolute; inset: -14px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(248,208,48,.22) 0%, transparent 70%);
+      opacity: 0; transition: opacity .7s; z-index: 0; pointer-events: none;
+    }
+    .mystery-sprite.revealed ~ .mystery-glow { opacity: 1; }
+
+    /* Duo sprites — level 3 (more overlap) */
+    .mystery-duo { display: none; }
+
+    .duo-container {
+      position: relative;
+      width: min(320px, 92vw);
+      height: min(220px, 68vw);
+      margin: 0 auto 1.2rem;
+      overflow: hidden; /* clip blur bleed */
+    }
+
+    .sprite-a,
+    .sprite-b {
+      position: absolute;
+      width: 68%;
+      height: 88%;
+      top: 6%;
+      object-fit: contain;
+      /* transition controlled per-element */
+      transition: filter 0.75s ease;
+    }
+    /* sprite-a: left side, overlapping toward center */
+    .sprite-a { left: 2%; z-index: 2; }
+    /* sprite-b: right side, overlapping toward center */
+    .sprite-b { right: 2%; z-index: 1; }
+
+    /* Override transform+filter on reveal for duo */
+    .sprite-a.revealed,
+    .sprite-b.revealed { filter: none !important; transform: none !important; }
+
+    .duo-labels { display: flex; justify-content: space-around; gap: 1rem; }
+    .duo-label {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: clamp(.62rem, 2.2vw, .92rem); letter-spacing: .18em;
+      text-transform: uppercase; color: rgba(255,255,255,.12); flex: 1;
+    }
+    .duo-label.a { text-align: left; }
+    .duo-label.b { text-align: right; }
+    .duo-label.guessed.a { color: var(--p1); animation: name-pop .5s cubic-bezier(.34,1.56,.64,1); }
+    .duo-label.guessed.b { color: var(--p2); animation: name-pop .5s cubic-bezier(.34,1.56,.64,1); }
+
+    .mystery-label {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: clamp(.9rem, 3vw, 1.4rem); letter-spacing: .22em;
+      color: rgba(255,255,255,.12); text-transform: uppercase;
+    }
+    .mystery-label.revealed-name { color: #F8D030; animation: name-pop .5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes name-pop { from { opacity: 0; transform: scale(.75); } to { opacity: 1; transform: scale(1); } }
+
+    /* Tipo tags */
+    .type-tag { padding: .15rem .48rem; border-radius: 50px; font-size: .62rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+
+    /* Hints */
+    .hints-section { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.15rem; margin-bottom: 1rem; }
+    .hint-buttons { display: flex; flex-wrap: wrap; gap: .42rem; margin-bottom: .7rem; }
+    .hint-btn {
+      display: flex; align-items: center; gap: .35rem;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--muted); font-family: 'Rajdhani', sans-serif; font-weight: 700;
+      font-size: .76rem; letter-spacing: .05em; padding: .4rem .82rem;
+      border-radius: 50px; cursor: pointer; transition: all .18s; white-space: nowrap;
+    }
+    .hint-btn .cost { font-family: 'Orbitron', monospace; font-size: .5rem; color: #f87171; opacity: .8; }
+    .hint-btn:hover:not(:disabled):not(.used) { border-color: rgba(248,208,48,.35); color: var(--text); background: rgba(248,208,48,.07); }
+    .hint-btn.used { opacity: .3; cursor: default; text-decoration: line-through; }
+    .hint-btn:disabled:not(.used) { opacity: .3; cursor: not-allowed; }
+
+    .hints-revealed { display: flex; flex-direction: column; gap: .42rem; }
+    .hint-card {
+      background: rgba(248,208,48,.05); border: 1px solid rgba(248,208,48,.12);
+      border-radius: 12px; padding: .55rem .9rem;
+      display: flex; align-items: flex-start; gap: .6rem; animation: hint-in .28s ease;
+    }
+    @keyframes hint-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .hint-icon { font-size: .95rem; flex-shrink: 0; padding-top: .1rem; }
+    .hint-lbl { font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; margin-bottom: .12rem; }
+    .hint-val { font-size: .86rem; font-weight: 700; color: var(--text); letter-spacing: .04em; display: flex; align-items: center; flex-wrap: wrap; gap: .28rem; }
+    .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(255,255,255,.22); }
+    .hint-row-duo { display: flex; align-items: center; gap: .5rem; margin-bottom: .18rem; }
+    .hint-row-duo:last-child { margin-bottom: 0; }
+    .duo-marker { font-size: .7rem; font-weight: 900; flex-shrink: 0; }
+
+    /* Answer */
+    .answer-section { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.15rem; }
+    .duo-remaining { display: none; font-family: 'Orbitron', monospace; font-size: .55rem; letter-spacing: .18em; color: var(--muted); text-align: center; margin-bottom: .65rem; }
+    .duo-remaining.visible { display: block; }
+    .duo-remaining strong { color: #F8D030; }
+    .answer-wrap { position: relative; }
+    .answer-row { display: flex; gap: .58rem; margin-bottom: .6rem; }
+    #answer-input {
+      flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 50px; padding: .68rem 1.2rem; color: var(--text);
+      font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600;
+      letter-spacing: .05em; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    #answer-input::placeholder { color: var(--muted); }
+    #answer-input:focus { border-color: rgba(248,208,48,.45); box-shadow: 0 0 0 3px rgba(248,208,48,.07); }
+    #answer-input.shake { animation: shake .36s ease; border-color: rgba(248,80,80,.5); }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+    #answer-input:disabled { opacity: .4; }
+    #submit-btn {
+      background: linear-gradient(130deg, rgba(248,208,48,.22), rgba(248,88,136,.16));
+      border: 1px solid rgba(248,208,48,.4); color: #F8D030;
+      font-family: 'Orbitron', monospace; font-weight: 700; font-size: .6rem;
+      letter-spacing: .15em; padding: .68rem 1.35rem; border-radius: 50px;
+      cursor: pointer; white-space: nowrap; transition: all .2s;
+    }
+    #submit-btn:hover:not(:disabled) { background: linear-gradient(130deg, rgba(248,208,48,.38), rgba(248,88,136,.28)); border-color: rgba(248,208,48,.7); box-shadow: 0 0 18px rgba(248,208,48,.22); }
+    #submit-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    /* Autocomplete */
+    .suggestions {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+      background: var(--surface-2); border: 1px solid rgba(248,208,48,.22);
+      border-radius: 14px; overflow: hidden; z-index: 500;
+      display: none; box-shadow: 0 10px 36px rgba(0,0,0,.5); max-height: 260px; overflow-y: auto;
+    }
+    .suggestions.visible { display: block; }
+    .suggestion-item { display: flex; align-items: center; gap: .6rem; padding: .48rem .9rem; cursor: pointer; transition: background .12s; border-bottom: 1px solid var(--border); }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover, .suggestion-item.active { background: rgba(248,208,48,.09); }
+    .suggestion-item img { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
+    .suggestion-name { font-weight: 700; font-size: .88rem; letter-spacing: .04em; text-transform: capitalize; flex: 1; }
+    .suggestion-num { font-family: 'Orbitron', monospace; font-size: .52rem; letter-spacing: .14em; color: var(--muted); }
+
+    .feedback-msg { font-size: .88rem; font-weight: 600; letter-spacing: .04em; min-height: 1.2em; text-align: center; margin-bottom: .45rem; }
+    .feedback-msg.correct { color: #4ade80; }
+    .feedback-msg.wrong   { color: #f87171; }
+    .feedback-msg.info    { color: var(--muted); }
+
+    .giveup-row { text-align: center; }
+    #give-up-btn { background: transparent; border: none; color: rgba(248,80,80,.38); font-family: 'Orbitron', monospace; font-size: .54rem; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; padding: .3rem .6rem; transition: color .18s; }
+    #give-up-btn:hover:not(:disabled) { color: #f87171; }
+    #give-up-btn:disabled { opacity: .22; cursor: not-allowed; }
+
+    /* Result */
+    .result-section { display: none; margin-top: 1rem; background: var(--surface); border: 1px solid rgba(248,208,48,.17); border-radius: 20px; padding: 1.75rem; text-align: center; }
+    .result-section.visible { display: block; }
+    .pts-earned { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 2.5rem; color: #F8D030; letter-spacing: .06em; line-height: 1; margin-bottom: .2rem; animation: pts-pop .5s cubic-bezier(.34,1.56,.64,1); }
+    .pts-earned.zero    { color: #f87171; }
+    .pts-earned.partial { color: #fa8c16; }
+    @keyframes pts-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+    .pts-label { font-family: 'Orbitron', monospace; font-size: .55rem; letter-spacing: .22em; color: var(--muted); margin-bottom: 1.5rem; }
+    #next-btn { background: linear-gradient(130deg, rgba(74,222,128,.2), rgba(112,56,248,.15)); border: 1px solid rgba(74,222,128,.4); color: #4ade80; font-family: 'Orbitron', monospace; font-weight: 700; font-size: .65rem; letter-spacing: .18em; padding: .85rem 2.5rem; border-radius: 50px; cursor: pointer; transition: all .2s; }
+    #next-btn:hover { background: linear-gradient(130deg, rgba(74,222,128,.35), rgba(112,56,248,.25)); border-color: rgba(74,222,128,.7); box-shadow: 0 0 24px rgba(74,222,128,.22); transform: scale(1.03); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
+
+    /* ── ANIMATED MYSTERY BACKGROUND ────────────── */
+    /* Diagonal stripes que deslizam continuamente */
+    .mystery-area::after {
+      content: ''; position: absolute;
+      top: -100%; left: -100%; width: 300%; height: 300%;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent 0px, transparent 18px,
+        rgba(248,208,48,.022) 18px, rgba(248,208,48,.022) 36px
+      );
+      animation: stripe-scroll 3.5s linear infinite;
+      pointer-events: none; z-index: 0;
+    }
+    @keyframes stripe-scroll {
+      to { transform: translate(36px, 36px); }
+    }
+
+    /* Raios rotativos como no desenho */
+    .mystery-rays {
+      position: absolute; inset: 0; border-radius: 24px;
+      overflow: hidden; pointer-events: none; z-index: 0;
+    }
+    .mystery-rays::before {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      width: 300%; height: 300%;
+      transform: translate(-50%, -50%);
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg,   rgba(248,208,48,.08) 10deg,  transparent 22deg,
+        transparent 60deg,  rgba(248,88,136,.06) 70deg,   transparent 82deg,
+        transparent 120deg, rgba(248,208,48,.07) 130deg, transparent 142deg,
+        transparent 180deg, rgba(248,88,136,.05) 190deg,  transparent 202deg,
+        transparent 240deg, rgba(248,208,48,.08) 250deg, transparent 262deg,
+        transparent 300deg, rgba(248,88,136,.06) 310deg,  transparent 322deg
+      );
+      animation: rays-rotate 18s linear infinite;
+    }
+    @keyframes rays-rotate {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* ── POKÉBALL INTRO ──────────────────────────── */
+    .pb-overlay {
+      position: absolute; inset: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(7,7,15,.93); border-radius: 24px;
+      pointer-events: none; transition: opacity .45s ease;
+    }
+    .pb-overlay.pb-out { opacity: 0; }
+
+    .pb-wrap {
+      animation:
+        pb-drop    1.2s  cubic-bezier(.36,.07,.19,.97) forwards,
+        pb-explode 0.42s 1.35s ease forwards;
+    }
+    @keyframes pb-drop {
+      0%   { transform: translateY(-220px) rotate(0deg);   opacity: 0; }
+      35%  { transform: translateY(4px)   rotate(210deg);  opacity: 1; }
+      52%  { transform: translateY(-28px) rotate(244deg); }
+      68%  { transform: translateY(2px)   rotate(258deg); }
+      80%  { transform: translateY(-11px) rotate(263deg); }
+      90%  { transform: translateY(0)     rotate(267deg); }
+      100% { transform: translateY(0)     rotate(270deg); }
+    }
+    @keyframes pb-explode {
+      0%   { transform: scale(1)   rotate(270deg); filter: brightness(1);  }
+      35%  { transform: scale(1.9) rotate(270deg); filter: brightness(7);  }
+      100% { transform: scale(0)   rotate(270deg); filter: brightness(16); opacity: 0; }
+    }
+    .pb-ball {
+      width: 82px; height: 82px; border-radius: 50%;
+      border: 5px solid #111; position: relative; overflow: hidden;
+      box-shadow: 0 0 32px rgba(227,53,13,.65), 0 10px 28px rgba(0,0,0,.75);
+    }
+    .pb-top  { position: absolute; top: 0; left: 0; right: 0; height: 50%;
+               background: linear-gradient(140deg, #ff5533 0%, #E3350D 100%); }
+    .pb-bot  { position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+               background: linear-gradient(140deg, #fff 0%, #e0e0e0 100%); }
+    .pb-band { position: absolute; top: 50%; left: 0; right: 0;
+               height: 10px; background: #111; transform: translateY(-50%); z-index: 2; }
+    .pb-btn  { position: absolute; top: 50%; left: 50%;
+               transform: translate(-50%, -50%);
+               width: 24px; height: 24px; border-radius: 50%;
+               background: radial-gradient(circle at 38% 35%, #fff, #c0c0c0);
+               border: 5px solid #111; z-index: 3; }
+    .pb-flash {
+      position: absolute; inset: 0; border-radius: 24px;
+      background: white; opacity: 0; pointer-events: none;
+      animation: pb-flash-anim .65s 1.37s ease forwards;
+    }
+    @keyframes pb-flash-anim {
+      0%  { opacity: 0; }
+      12% { opacity: .93; }
+      100%{ opacity: 0; }
+    }
+
+    /* ── BACK TO SETUP BUTTON ────────────────────── */
+    .game-topbar { display: flex; justify-content: flex-end; margin-bottom: .65rem; }
+    .back-to-setup-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'Orbitron', monospace; font-size: .47rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      padding: .42rem .95rem; border-radius: 50px; cursor: pointer;
+      transition: all .18s;
+    }
+    .back-to-setup-btn:hover { border-color: rgba(248,88,136,.45); color: var(--p1); }
+
+    /* ── MOBILE ─────────────────────────────────── */
+    @media (max-width: 640px) {
+      .header-inner { padding: .65rem 1rem; gap: .75rem; }
+      .back-link { font-size: 0; gap: 0; }
+      .back-link svg { width: 20px; height: 20px; }
+      main { padding: 1rem; }
+      .setup-sub { font-size: .85rem; margin-bottom: 1.75rem; }
+      .gen-grid { grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: .5rem; }
+      .diff-row { flex-direction: column; gap: .45rem; }
+      .diff-btn { flex-direction: row; align-items: center; gap: .75rem; padding: .8rem 1rem; }
+      .diff-desc { display: none; }
+      .score-row { grid-template-columns: repeat(2, 1fr); gap: .5rem; margin-bottom: 1.1rem; }
+      .s-val { font-size: 1.1rem; }
+      .mystery-area { padding: 1.75rem 1rem 1.5rem; }
+      .mystery-sprite { width: clamp(130px, 42vw, 200px); height: clamp(130px, 42vw, 200px); }
+      .hint-btn { font-size: .7rem; padding: .38rem .7rem; }
+      .answer-row { flex-direction: column; gap: .5rem; }
+      #submit-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="back-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Pokédex
+      </a>
+      <div class="logo">QUEM É ESTE POKÉMON?</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── SETUP ─────────────────────────────────── -->
+    <div id="setup-screen">
+      <div class="setup-title">QUEM É ESTE<br>POKÉMON?</div>
+      <div class="setup-sub">Configure o desafio e descubra quem é!</div>
+
+      <div class="section-label" style="margin-bottom:.85rem">Gerações disponíveis</div>
+      <div class="gen-grid" id="gen-grid"></div>
+
+      <div class="section-label" style="margin-bottom:.85rem">Nível de dificuldade</div>
+      <div class="diff-row" id="diff-row">
+        <button class="diff-btn selected" data-level="1">
+          <div class="diff-lv">NÍVEL 01</div>
+          <div class="diff-name">Normal</div>
+          <div class="diff-desc">Silhueta padrão</div>
+        </button>
+        <button class="diff-btn" data-level="2">
+          <div class="diff-lv">NÍVEL 02</div>
+          <div class="diff-name">Difícil</div>
+          <div class="diff-desc">Posição aleatória + revela com dicas</div>
+        </button>
+        <button class="diff-btn" data-level="3">
+          <div class="diff-lv">NÍVEL 03</div>
+          <div class="diff-name">Extremo</div>
+          <div class="diff-desc">Nível 2 + dois Pokémon sobrepostos</div>
+        </button>
+      </div>
+
+      <div class="pool-info"><strong id="pool-count">151</strong> POKÉMON SELECIONADOS</div>
+      <button id="start-btn">▶ INICIAR JOGO</button>
+    </div>
+
+    <!-- ── GAME ──────────────────────────────────── -->
+    <div id="game-screen">
+
+      <div class="game-topbar">
+        <button id="back-to-setup-btn" class="back-to-setup-btn">← Mudar configuração</button>
+      </div>
+
+      <div class="score-row">
+        <div class="score-box"><div class="s-label">Pontos rodada</div><div class="s-val" id="val-round">100</div></div>
+        <div class="score-box"><div class="s-label">Total</div><div class="s-val" id="val-total">0</div></div>
+        <div class="score-box"><div class="s-label">Acertos</div><div class="s-val" id="val-hits">0/0</div></div>
+        <div class="score-box"><div class="s-label">Sequência</div><div class="s-val" id="val-streak">0</div></div>
+      </div>
+
+      <div class="mystery-area">
+        <div class="mystery-rays"></div>
+        <div class="round-badge" id="round-badge">RODADA 1</div>
+        <div class="level-badge" id="level-badge">NV 1</div>
+
+        <!-- Nível 1 & 2 -->
+        <div class="mystery-single" id="mystery-single">
+          <div class="mystery-sprite-wrap">
+            <img class="mystery-sprite" id="mystery-sprite" src="" alt="???">
+            <div class="mystery-glow"></div>
+          </div>
+          <div class="mystery-label" id="mystery-label">???</div>
+        </div>
+
+        <!-- Nível 3: sobrepostos -->
+        <div class="mystery-duo" id="mystery-duo">
+          <div class="duo-container">
+            <img class="mystery-sprite sprite-a" id="sprite-a" src="" alt="???">
+            <img class="mystery-sprite sprite-b" id="sprite-b" src="" alt="???">
+          </div>
+          <div class="duo-labels">
+            <div class="duo-label a" id="label-a">???</div>
+            <div class="duo-label b" id="label-b">???</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hints-section">
+        <div class="section-label" style="margin-bottom:.85rem">Pedir dica</div>
+        <div class="hint-buttons" id="hint-buttons"></div>
+        <div class="hints-revealed" id="hints-revealed"></div>
+      </div>
+
+      <div class="answer-section">
+        <div class="section-label" style="margin-bottom:.65rem">Sua resposta</div>
+        <div class="duo-remaining" id="duo-remaining">Faltam <strong id="remaining-count">2</strong> Pokémon</div>
+        <div class="answer-wrap">
+          <div class="answer-row">
+            <input id="answer-input" type="text" placeholder="Nome do Pokémon..." autocomplete="off" spellcheck="false">
+            <button id="submit-btn">CONFIRMAR</button>
+          </div>
+          <div class="suggestions" id="suggestions"></div>
+        </div>
+        <div class="feedback-msg" id="feedback"></div>
+        <div class="giveup-row"><button id="give-up-btn">Desistir e revelar</button></div>
+      </div>
+
+      <div class="result-section" id="result-section">
+        <div class="pts-earned" id="pts-earned">+100</div>
+        <div class="pts-label" id="pts-label">PONTOS CONQUISTADOS</div>
+        <button id="next-btn">PRÓXIMO POKÉMON →</button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+  (() => {
+    /* ── CONSTANTES ──────────────────────────────── */
+    const COLOR_PT = {
+      black:'Preto', blue:'Azul', brown:'Marrom', gray:'Cinza',
+      green:'Verde', pink:'Rosa', purple:'Roxo', red:'Vermelho',
+      white:'Branco', yellow:'Amarelo'
+    };
+    const COLOR_DOT = {
+      black:'#2a2a2a', blue:'#4488ee', brown:'#8B5e3c', gray:'#909090',
+      green:'#55bb44', pink:'#ff88aa', purple:'#9955cc', red:'#ee3333',
+      white:'#eeeeee', yellow:'#F8D030'
+    };
+    const TYPE_COLOR = {
+      normal:'#A8A878', fire:'#F08030', water:'#6890F0', electric:'#F8D030',
+      grass:'#78C850', ice:'#98D8D8', fighting:'#C03028', poison:'#A040A0',
+      ground:'#E0C068', flying:'#A890F0', psychic:'#F85888', bug:'#A8B820',
+      rock:'#B8A038', ghost:'#705898', dragon:'#7038F8', dark:'#705848',
+      steel:'#B8B8D0', fairy:'#EE99AC'
+    };
+    const TYPE_PT = {
+      normal:'Normal', fire:'Fogo', water:'Água', electric:'Elétrico',
+      grass:'Planta', ice:'Gelo', fighting:'Lutador', poison:'Veneno',
+      ground:'Terra', flying:'Voador', psychic:'Psíquico', bug:'Inseto',
+      rock:'Pedra', ghost:'Fantasma', dragon:'Dragão', dark:'Sombrio',
+      steel:'Aço', fairy:'Fada'
+    };
+    const GENS = [
+      { num:'I',    label:'Kanto',  min:1,    max:151,  color:'#F85888' },
+      { num:'II',   label:'Johto',  min:152,  max:251,  color:'#F8D030' },
+      { num:'III',  label:'Hoenn',  min:252,  max:386,  color:'#78C850' },
+      { num:'IV',   label:'Sinnoh', min:387,  max:493,  color:'#6890F0' },
+      { num:'V',    label:'Unova',  min:494,  max:649,  color:'#A8A8A8' },
+      { num:'VI',   label:'Kalos',  min:650,  max:721,  color:'#A040A0' },
+      { num:'VII',  label:'Alola',  min:722,  max:809,  color:'#F08030' },
+      { num:'VIII', label:'Galar',  min:810,  max:905,  color:'#98D8D8' },
+      { num:'IX',   label:'Paldea', min:906,  max:1025, color:'#C03028' },
+    ];
+
+    /* Dificuldade: blur inicial e redução por dica */
+    const DIFF = {
+      1: { initBlur: 0,  blurStep: 0  },
+      2: { initBlur: 14, blurStep: 3  },
+      3: { initBlur: 20, blurStep: 4  },
+    };
+
+    /* Transformações aleatórias para nível 2/3 */
+    const TRANSFORMS = [
+      'rotate(90deg)', 'rotate(180deg)', 'rotate(270deg)',
+      'rotate(45deg)', 'rotate(135deg)', 'rotate(225deg)', 'rotate(315deg)',
+      'scaleX(-1)', 'rotate(90deg) scaleX(-1)', 'rotate(180deg) scaleX(-1)',
+    ];
+
+    /* Dicas — custo em pontos */
+    const HINTS = [
+      { id:'type',   label:'Tipo(s)',              icon:'🏷', cost:10 },
+      { id:'gen',    label:'Geração',               icon:'🗺', cost:10 },
+      { id:'size',   label:'Altura / Peso',         icon:'⚖', cost:10 },
+      { id:'cry',    label:'Ouvir grito',           icon:'🔊', cost:15 },
+      { id:'letter', label:'1ª letra + tamanho',   icon:'🔤', cost:20 },
+      { id:'color',  label:'Cor predominante',       icon:'🎨', cost:20 },
+    ];
+
+    /* ── ESTADO ──────────────────────────────────── */
+    let masterList   = [];
+    let pool         = [];
+    let poolIdx      = 0;
+    let selectedGens = new Set([0]);
+    let currentLevel = 1;
+
+    let totalScore   = 0;
+    let roundScore   = 100;
+    let roundNum     = 0;
+    let correctCount = 0;
+    let streak       = 0;
+    let hintsUsed    = new Set();
+    let roundOver    = false;
+
+    let dataA = null, dataB = null;
+    let speciesA = null, speciesB = null;
+    let guessedA = false, guessedB = false;
+    let currentBlur = 0;
+
+    let activeSuggIdx = -1;
+    let currentPokeballOverlay = null;
+
+    /* ── HELPERS ─────────────────────────────────── */
+    function hex(h, a) {
+      const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    function typeTag(name) {
+      const c = TYPE_COLOR[name] || '#888';
+      return `<span class="type-tag" style="background:${hex(c,.18)};color:${c};border:1px solid ${hex(c,.32)}">${TYPE_PT[name]||name}</span>`;
+    }
+    function genLabel(id) {
+      const g = GENS.find(g => id >= g.min && id <= g.max);
+      return g ? `Geração ${g.num} — ${g.label}` : '?';
+    }
+    function officialSprite(data) {
+      return data.sprites?.other?.['official-artwork']?.front_default || data.sprites?.front_default || '';
+    }
+    function miniSprite(id) {
+      return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+    }
+    function normalize(s) { return s.trim().toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    function pad(n) { return String(n).padStart(4, '0'); }
+
+    function randomTransform(prob = 0.65) {
+      return Math.random() < prob
+        ? TRANSFORMS[Math.floor(Math.random() * TRANSFORMS.length)]
+        : '';
+    }
+
+    /* ── AUDIO & ANIMAÇÃO DE INTRO ──────────────── */
+    function playWhosThatPokemon() {
+      const a = new Audio('https://www.myinstants.com/media/sounds/quem-e-esse-pokemon-011.mp3');
+      a.volume = 0.75;
+      a.play().catch(() => {});
+    }
+
+    function showPokeballIntro() {
+      return new Promise(resolve => {
+        playWhosThatPokemon();
+        const area = document.querySelector('.mystery-area');
+        const overlay = document.createElement('div');
+        overlay.className = 'pb-overlay';
+        overlay.innerHTML =
+          '<div class="pb-wrap">' +
+            '<div class="pb-ball">' +
+              '<div class="pb-top"></div>' +
+              '<div class="pb-bot"></div>' +
+              '<div class="pb-band"></div>' +
+              '<div class="pb-btn"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="pb-flash"></div>';
+        area.appendChild(overlay);
+        currentPokeballOverlay = overlay;
+        /* A animação dura ~1.77s (drop 1.2s + explode 0.42s + 0.15s margem).
+           Flash começa em 1.37s e dura 0.65s → termina em ~2s.
+           Iniciamos o fade-out em 1.95s e removemos em 2.4s. */
+        setTimeout(() => {
+          overlay.classList.add('pb-out');
+          setTimeout(() => {
+            if (overlay.parentNode) overlay.remove();
+            currentPokeballOverlay = null;
+            resolve();
+          }, 460);
+        }, 1950);
+      });
+    }
+
+    /* ── SETUP: GERAÇÕES ─────────────────────────── */
+    const genGrid     = document.getElementById('gen-grid');
+    const poolCountEl = document.getElementById('pool-count');
+    const startBtn    = document.getElementById('start-btn');
+
+    GENS.forEach((g, i) => {
+      const count = g.max - g.min + 1;
+      const card  = document.createElement('div');
+      card.className = 'gen-card' + (i === 0 ? ' selected' : '');
+      card.style.setProperty('--gc',        hex(g.color, .14));
+      card.style.setProperty('--gc-border', hex(g.color, .5));
+      card.style.setProperty('--gc-glow',   hex(g.color, .16));
+      card.style.setProperty('--gc-text',   g.color);
+      card.innerHTML = `
+        <div class="gen-check">${i === 0 ? '✓' : ''}</div>
+        <div class="gen-num">Gen ${g.num}</div>
+        <div class="gen-region">${g.label}</div>
+        <div class="gen-count">${count} pokémon</div>`;
+      card.addEventListener('click', () => {
+        if (selectedGens.has(i)) {
+          if (selectedGens.size === 1) return;
+          selectedGens.delete(i);
+          card.classList.remove('selected');
+          card.querySelector('.gen-check').textContent = '';
+        } else {
+          selectedGens.add(i);
+          card.classList.add('selected');
+          card.querySelector('.gen-check').textContent = '✓';
+        }
+        let n = 0; selectedGens.forEach(i => { n += GENS[i].max - GENS[i].min + 1; });
+        poolCountEl.textContent = n;
+      });
+      genGrid.appendChild(card);
+    });
+
+    /* ── SETUP: DIFICULDADE ──────────────────────── */
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentLevel = parseInt(btn.dataset.level);
+      });
+    });
+
+    /* ── INICIAR ─────────────────────────────────── */
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      startBtn.textContent = 'Carregando...';
+      if (!masterList.length) {
+        const res  = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0');
+        const json = await res.json();
+        masterList = json.results.map((p, i) => ({ name: p.name, id: i + 1, url: p.url }));
+      }
+      buildPool();
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('game-screen').style.display  = 'block';
+
+      /* Mostrar layout correto */
+      if (currentLevel === 3) {
+        document.getElementById('mystery-single').style.display = 'none';
+        document.getElementById('mystery-duo').style.display    = 'block';
+        document.getElementById('duo-remaining').classList.add('visible');
+      }
+      document.getElementById('level-badge').textContent = `NV ${currentLevel}`;
+      startRound();
+    });
+
+    function buildPool() {
+      pool = masterList.filter(p =>
+        [...selectedGens].some(i => p.id >= GENS[i].min && p.id <= GENS[i].max)
+      );
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      poolIdx = 0;
+    }
+
+    function pickNext() {
+      if (poolIdx >= pool.length) buildPool();
+      return pool[poolIdx++];
+    }
+
+    /* ── SPRITES: SEM FLASH ──────────────────────── */
+    /*
+      Fluxo:
+      1. prepareSprite: desativa transição, força preto+blur, oculta (opacity 0)
+      2. showSprite: define src; no onload → requestAnimationFrame → restaura transição → mostra (opacity 1)
+      3. updateAllFilters: chamado após cada dica para reduzir blur
+      4. reveal: add classe .revealed → !important filter:none dispara transição
+    */
+    function prepareSprite(el) {
+      el.classList.remove('revealed');
+      el.style.transition = 'none';
+      el.style.opacity    = '0';
+      el.style.transform  = '';
+      el.style.filter     = filterString();
+    }
+
+    function showSprite(el, src, transform = '') {
+      el.src = src;
+      el.onload = () => {
+        requestAnimationFrame(() => {
+          el.style.transition = 'filter 0.75s ease, opacity 0.3s ease';
+          /* Não limpa o filter — mantém o estado de prepareSprite */
+          if (transform) el.style.transform = transform;
+          el.style.opacity = '1';
+        });
+      };
+    }
+
+    function filterString() {
+      const blur = currentBlur > 0 ? ` blur(${currentBlur}px)` : '';
+      return `brightness(0)${blur}`;
+    }
+
+    function updateAllFilters() {
+      const f = filterString();
+      if (currentLevel === 3) {
+        if (!guessedA) document.getElementById('sprite-a').style.filter = f;
+        if (!guessedB) document.getElementById('sprite-b').style.filter = f;
+      } else {
+        document.getElementById('mystery-sprite').style.filter = f;
+      }
+    }
+
+    /* ── RODADA ──────────────────────────────────── */
+    async function startRound() {
+      hideSuggestions();
+      roundOver     = false;
+      guessedA      = guessedB = false;
+      roundScore  = 100;
+      currentBlur = DIFF[currentLevel].initBlur;
+      hintsUsed.clear();
+      roundNum++;
+
+      document.getElementById('round-badge').textContent    = `RODADA ${roundNum}`;
+      document.getElementById('val-round').textContent      = 100;
+      document.getElementById('hints-revealed').innerHTML   = '';
+      document.getElementById('result-section').classList.remove('visible');
+      document.getElementById('feedback').textContent       = '';
+      document.getElementById('feedback').className         = 'feedback-msg';
+
+      const inp = document.getElementById('answer-input');
+      inp.value = ''; inp.disabled = false; inp.className = '';
+      document.getElementById('submit-btn').disabled  = false;
+      document.getElementById('give-up-btn').disabled = false;
+
+      /* Buscar Pokémon */
+      const pickA = pickNext();
+      const pickB = currentLevel === 3 ? pickNext() : null;
+
+      /* Busca dados + espécies e mostra intro da pokébola em paralelo */
+      const [fetchResults] = await Promise.all([
+        Promise.all([
+          fetch(pickA.url).then(r => r.json()),
+          fetch(`https://pokeapi.co/api/v2/pokemon-species/${pickA.id}/`).then(r => r.json()).catch(() => null),
+          pickB ? fetch(pickB.url).then(r => r.json()) : Promise.resolve(null),
+          pickB ? fetch(`https://pokeapi.co/api/v2/pokemon-species/${pickB.id}/`).then(r => r.json()).catch(() => null) : Promise.resolve(null),
+        ]),
+        showPokeballIntro(),
+      ]);
+      dataA    = fetchResults[0];
+      speciesA = fetchResults[1];
+      dataB    = fetchResults[2];
+      speciesB = fetchResults[3];
+
+      if (currentLevel === 3) {
+        /* Dois sprites sobrepostos, cada um com rotação aleatória (65% chance) */
+        const elA = document.getElementById('sprite-a');
+        const elB = document.getElementById('sprite-b');
+        prepareSprite(elA);
+        prepareSprite(elB);
+        showSprite(elA, officialSprite(dataA), randomTransform(0.65));
+        showSprite(elB, officialSprite(dataB), randomTransform(0.65));
+
+        document.getElementById('label-a').textContent = '???';
+        document.getElementById('label-a').className   = 'duo-label a';
+        document.getElementById('label-b').textContent = '???';
+        document.getElementById('label-b').className   = 'duo-label b';
+        document.getElementById('remaining-count').textContent = 2;
+      } else {
+        const el = document.getElementById('mystery-sprite');
+        prepareSprite(el);
+        /* Nível 2: rotação aleatória (65% chance). Nível 1: sempre sem rotação */
+        const t = currentLevel === 2 ? randomTransform(0.65) : '';
+        showSprite(el, officialSprite(dataA), t);
+
+        document.getElementById('mystery-label').textContent = '???';
+        document.getElementById('mystery-label').className   = 'mystery-label';
+      }
+
+      renderHints();
+      inp.focus();
+    }
+
+    /* ── DICAS ───────────────────────────────────── */
+    function renderHints() {
+      const container = document.getElementById('hint-buttons');
+      container.innerHTML = '';
+      HINTS.forEach(h => {
+        const btn = document.createElement('button');
+        btn.className = 'hint-btn' + (hintsUsed.has(h.id) ? ' used' : '');
+        btn.disabled  = hintsUsed.has(h.id) || roundOver;
+        btn.innerHTML = `${h.icon} ${h.label} <span class="cost">−${h.cost}pts</span>`;
+        btn.addEventListener('click', () => applyHint(h));
+        container.appendChild(btn);
+      });
+    }
+
+    function applyHint(h) {
+      if (hintsUsed.has(h.id) || roundOver) return;
+      hintsUsed.add(h.id);
+
+      /* Pontuação */
+      roundScore = Math.max(0, roundScore - h.cost);
+      const roundEl = document.getElementById('val-round');
+      roundEl.style.animation = 'none';
+      void roundEl.offsetWidth;
+      roundEl.style.animation = 'score-drop .4s ease forwards';
+      roundEl.textContent = roundScore;
+
+      /* Revelar progressivo: qualquer dica reduz o blur no nível 2/3 */
+      if (currentLevel >= 2 && DIFF[currentLevel].blurStep > 0) {
+        currentBlur = Math.max(0, currentBlur - DIFF[currentLevel].blurStep);
+      }
+      updateAllFilters();
+
+      /* Grito */
+      if (h.id === 'cry') {
+        if (dataA?.cries?.latest) {
+          const a = new Audio(dataA.cries.latest);
+          a.volume = 0.5;
+          a.play().catch(() => {});
+        }
+        if (currentLevel === 3 && dataB?.cries?.latest) {
+          setTimeout(() => {
+            const b = new Audio(dataB.cries.latest);
+            b.volume = 0.5;
+            b.play().catch(() => {});
+          }, 1600);
+        }
+      }
+
+      /* Card da dica */
+      const revealed = document.getElementById('hints-revealed');
+      const card     = document.createElement('div');
+      card.className = 'hint-card';
+      card.innerHTML = buildHintCardHTML(h);
+      revealed.appendChild(card);
+      renderHints();
+    }
+
+    function hintValueFor(h, data) {
+      switch (h.id) {
+        case 'type':   return data.types.map(t => typeTag(t.type.name)).join(' ');
+        case 'gen':    return genLabel(data.id);
+        case 'size':   return `${(data.height/10).toFixed(1)} m &nbsp;·&nbsp; ${(data.weight/10).toFixed(1)} kg`;
+        case 'letter': {
+          const first = data.name[0].toUpperCase();
+          return `Começa com <strong style="color:#F8D030;font-size:1.05em">${first}</strong> &nbsp;·&nbsp; ${data.name.length} letras`;
+        }
+        case 'color': {
+          const sp = (data === dataA) ? speciesA : speciesB;
+          const cn = sp?.color?.name;
+          const dot = COLOR_DOT[cn] || '#888';
+          const label = COLOR_PT[cn] || cn || '?';
+          return `<span class="color-dot" style="background:${dot}"></span>${label}`;
+        }
+        case 'cry':   return '🎵 Preste atenção ao som!';
+      }
+    }
+
+    function buildHintCardHTML(h) {
+      if (currentLevel === 3) {
+        const valA = h.id === 'cry' ? 'Grito 1 reproduzido' : hintValueFor(h, dataA);
+        const valB = h.id === 'cry' ? 'Grito 2 reproduzido (1.6s depois)' : hintValueFor(h, dataB);
+        return `
+          <div class="hint-icon">${h.icon}</div>
+          <div>
+            <div class="hint-lbl">${h.label}</div>
+            <div class="hint-row-duo">
+              <span class="duo-marker" style="color:var(--p1)">◀</span>
+              <div class="hint-val">${valA}</div>
+            </div>
+            <div class="hint-row-duo">
+              <span class="duo-marker" style="color:var(--p2)">▶</span>
+              <div class="hint-val">${valB}</div>
+            </div>
+          </div>`;
+      }
+      const val = hintValueFor(h, dataA);
+      return `
+        <div class="hint-icon">${h.icon}</div>
+        <div>
+          <div class="hint-lbl">${h.label}</div>
+          <div class="hint-val">${val}</div>
+        </div>`;
+    }
+
+    /* ── AUTOCOMPLETAR ───────────────────────────── */
+    const answerInput   = document.getElementById('answer-input');
+    const suggestionsEl = document.getElementById('suggestions');
+
+    answerInput.addEventListener('input', () => {
+      const q = answerInput.value.trim().toLowerCase();
+      if (q.length < 1) { hideSuggestions(); return; }
+
+      const starts   = pool.filter(p => p.name.startsWith(q)).slice(0, 5);
+      const contains = pool.filter(p => !p.name.startsWith(q) && p.name.includes(q)).slice(0, 3);
+      const results  = [...starts, ...contains].slice(0, 6);
+
+      if (!results.length) { hideSuggestions(); return; }
+
+      activeSuggIdx = -1;
+      suggestionsEl.innerHTML = results.map(p =>
+        `<div class="suggestion-item" data-name="${p.name}">
+          <img src="${miniSprite(p.id)}" alt="" loading="lazy" onerror="this.style.opacity='.2'">
+          <span class="suggestion-name">${p.name.replace(/-/g,' ')}</span>
+          <span class="suggestion-num">#${pad(p.id)}</span>
+        </div>`
+      ).join('');
+
+      suggestionsEl.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('mousedown', e => { e.preventDefault(); selectSuggestion(item.dataset.name); });
+      });
+      suggestionsEl.classList.add('visible');
+    });
+
+    answerInput.addEventListener('keydown', e => {
+      const items = suggestionsEl.querySelectorAll('.suggestion-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSuggIdx = Math.min(activeSuggIdx + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeSuggIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSuggIdx = Math.max(activeSuggIdx - 1, -1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeSuggIdx));
+      } else if (e.key === 'Enter') {
+        if (activeSuggIdx >= 0 && items[activeSuggIdx]) {
+          e.preventDefault();
+          selectSuggestion(items[activeSuggIdx].dataset.name);
+        } else { hideSuggestions(); submitAnswer(); }
+      } else if (e.key === 'Escape') { hideSuggestions(); }
+    });
+
+    answerInput.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
+
+    function selectSuggestion(name) {
+      answerInput.value = name.replace(/-/g, ' ');
+      hideSuggestions();
+      answerInput.focus();
+      submitAnswer();
+    }
+
+    function hideSuggestions() {
+      suggestionsEl.classList.remove('visible');
+      suggestionsEl.innerHTML = '';
+      activeSuggIdx = -1;
+    }
+
+    /* ── RESPOSTA ────────────────────────────────── */
+    function submitAnswer() {
+      if (roundOver) return;
+      const guess = normalize(answerInput.value);
+      if (!guess) return;
+      hideSuggestions();
+
+      if (currentLevel === 3) {
+        const ansA = normalize(dataA.name);
+        const ansB = normalize(dataB.name);
+
+        if (!guessedA && guess === ansA) {
+          guessedA = true;
+          revealDuo('a');
+          document.getElementById('remaining-count').textContent = guessedB ? 0 : 1;
+          showFeedback('✓ Pokémon da esquerda (◀) correto!', 'correct');
+          answerInput.value = '';
+          if (guessedB) endRound(true);
+        } else if (!guessedB && guess === ansB) {
+          guessedB = true;
+          revealDuo('b');
+          document.getElementById('remaining-count').textContent = guessedA ? 0 : 1;
+          showFeedback('✓ Pokémon da direita (▶) correto!', 'correct');
+          answerInput.value = '';
+          if (guessedA) endRound(true);
+        } else if ((guessedA && guess === ansA) || (guessedB && guess === ansB)) {
+          showFeedback('Já adivinhado! Tente o outro.', 'info');
+          answerInput.value = '';
+        } else {
+          errar();
+        }
+      } else {
+        if (guess === normalize(dataA.name)) endRound(true);
+        else errar();
+      }
+    }
+
+    function revealDuo(side) {
+      const el    = document.getElementById(`sprite-${side}`);
+      const label = document.getElementById(`label-${side}`);
+      const data  = side === 'a' ? dataA : dataB;
+      el.classList.add('revealed');   /* !important filter:none + transform:none */
+      label.textContent = data.name.toUpperCase();
+      label.className   = `duo-label ${side} guessed`;
+    }
+
+    function endRound(won) {
+      roundOver = true;
+      if (won) {
+        correctCount++;
+        streak++;
+        totalScore += roundScore;
+        showFeedback(currentLevel === 3 ? '🏆 Os dois corretos!' : '✓ Correto!', 'correct');
+        updateScoreboard();
+      } else {
+        streak = 0;
+        document.getElementById('val-streak').textContent = 0;
+        document.getElementById('val-hits').textContent   = `${correctCount}/${roundNum}`;
+      }
+
+      /* Revelar tudo que ainda está oculto */
+      if (currentLevel === 3) {
+        if (!guessedA) revealDuo('a');
+        if (!guessedB) revealDuo('b');
+      } else {
+        const el = document.getElementById('mystery-sprite');
+        el.classList.add('revealed');
+        const lbl = document.getElementById('mystery-label');
+        lbl.textContent = dataA.name.toUpperCase();
+        lbl.className   = 'mystery-label revealed-name';
+      }
+
+      endInputs();
+      renderHints();
+      showResult(won ? roundScore : 0, !won);
+    }
+
+    function desistir() {
+      if (roundOver) return;
+
+      /* Pontuação parcial nível 3 se um já foi adivinhado */
+      const partial = currentLevel === 3 && (guessedA || guessedB);
+      const earnedPts = partial ? Math.floor(roundScore / 2) : 0;
+      if (earnedPts > 0) totalScore += earnedPts;
+
+      showFeedback(
+        currentLevel === 3
+          ? `Era ${dataA.name.toUpperCase()} (◀) e ${dataB.name.toUpperCase()} (▶)!`
+          : `Era ${dataA.name.toUpperCase()}! Mais sorte na próxima.`,
+        'info'
+      );
+
+      endRound(false);
+      if (earnedPts > 0) {
+        document.getElementById('val-total').textContent = totalScore;
+        showResult(earnedPts, true);
+      }
+    }
+
+    function errar() {
+      answerInput.classList.remove('shake');
+      void answerInput.offsetWidth;
+      answerInput.classList.add('shake');
+      answerInput.value = '';
+      showFeedback('✗ Errado! Tente novamente.', 'wrong');
+      setTimeout(() => {
+        if (!roundOver) { document.getElementById('feedback').textContent = ''; document.getElementById('feedback').className = 'feedback-msg'; }
+      }, 1800);
+    }
+
+    function endInputs() {
+      answerInput.disabled = true;
+      document.getElementById('submit-btn').disabled  = true;
+      document.getElementById('give-up-btn').disabled = true;
+      hideSuggestions();
+    }
+
+    function showFeedback(msg, cls) {
+      const el = document.getElementById('feedback');
+      el.textContent = msg; el.className = `feedback-msg ${cls}`;
+    }
+
+    function updateScoreboard() {
+      document.getElementById('val-total').textContent  = totalScore;
+      document.getElementById('val-hits').textContent   = `${correctCount}/${roundNum}`;
+      document.getElementById('val-streak').textContent = streak;
+      const el = document.getElementById('val-total');
+      el.style.animation = 'none'; void el.offsetWidth; el.style.animation = 'score-gain .45s ease';
+    }
+
+    function showResult(pts, gaveUp) {
+      const ptsEl = document.getElementById('pts-earned');
+      const lblEl = document.getElementById('pts-label');
+      ptsEl.textContent = gaveUp ? (pts > 0 ? `+${pts}` : '0') : `+${pts}`;
+      ptsEl.className   = 'pts-earned' + (pts === 0 ? ' zero' : pts < 60 ? ' partial' : '');
+      lblEl.textContent = gaveUp
+        ? (pts > 0 ? 'PONTOS — PARCIAL' : 'PONTOS — DESISTIU')
+        : pts === 100 ? '🏆 PONTUAÇÃO MÁXIMA!' : 'PONTOS CONQUISTADOS';
+      document.getElementById('result-section').classList.add('visible');
+      document.getElementById('result-section').scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+
+    /* ── EVENTOS ─────────────────────────────────── */
+    document.getElementById('submit-btn').addEventListener('click', () => { hideSuggestions(); submitAnswer(); });
+    document.getElementById('give-up-btn').addEventListener('click', desistir);
+    document.getElementById('next-btn').addEventListener('click', startRound);
+
+    document.getElementById('back-to-setup-btn').addEventListener('click', () => {
+      /* Remove overlay da pokébola se estiver ativa */
+      if (currentPokeballOverlay) { currentPokeballOverlay.remove(); currentPokeballOverlay = null; }
+      /* Volta para tela de configuração */
+      document.getElementById('game-screen').style.display  = 'none';
+      document.getElementById('setup-screen').style.display = '';
+      /* Reseta exibição duo/single */
+      document.getElementById('mystery-single').style.display = '';
+      document.getElementById('mystery-duo').style.display    = 'none';
+      document.getElementById('duo-remaining').classList.remove('visible');
+      /* Reseta placar */
+      roundNum = 0; correctCount = 0; totalScore = 0; streak = 0;
+      document.getElementById('val-total').textContent  = 0;
+      document.getElementById('val-hits').textContent   = '0/0';
+      document.getElementById('val-streak').textContent = 0;
+      document.getElementById('val-round').textContent  = 100;
+      startBtn.textContent = '▶ INICIAR JOGO';
+      startBtn.disabled = false;
+    });
+
+  })();
+  </script>
+</body>
+</html>

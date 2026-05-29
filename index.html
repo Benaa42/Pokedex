@@ -122,6 +122,31 @@
       margin-left: auto;
     }
 
+    .quiz-link {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      background: linear-gradient(130deg, rgba(248,208,48,.18) 0%, rgba(112,56,248,.14) 100%);
+      border: 1px solid rgba(248,208,48,.4);
+      color: #F8D030;
+      font-family: 'Orbitron', monospace;
+      font-size: .6rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      padding: .55rem 1.2rem;
+      border-radius: 50px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: all .25s;
+    }
+
+    .quiz-link:hover {
+      background: linear-gradient(130deg, rgba(248,208,48,.35) 0%, rgba(112,56,248,.25) 100%);
+      border-color: rgba(248,208,48,.8);
+      box-shadow: 0 0 22px rgba(248,208,48,.3);
+      transform: scale(1.05);
+    }
+
     .battle-link {
       display: flex;
       align-items: center;
@@ -1020,6 +1045,9 @@
         <input id="search" type="search" placeholder="Buscar nome ou nº...">
       </div>
       <div class="header-meta">
+        <a href="quiz.html" class="quiz-link">
+          ❓ Quiz
+        </a>
         <a href="battle.html" class="battle-link">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/>
