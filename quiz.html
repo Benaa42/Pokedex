@@ -1142,15 +1142,19 @@
       });
     });
 
+    /* ── HELPERS DE INICIALIZAÇÃO ───────────────── */
+    async function ensureMasterList() {
+      if (masterList.length) return;
+      const res  = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0');
+      const json = await res.json();
+      masterList = json.results.map((p, i) => ({ name: p.name, id: i + 1, url: p.url }));
+    }
+
     /* ── INICIAR ─────────────────────────────────── */
     startBtn.addEventListener('click', async () => {
       startBtn.disabled = true;
       startBtn.textContent = 'Carregando...';
-      if (!masterList.length) {
-        const res  = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0');
-        const json = await res.json();
-        masterList = json.results.map((p, i) => ({ name: p.name, id: i + 1, url: p.url }));
-      }
+      await ensureMasterList();
       buildPool();
       document.getElementById('setup-screen').style.display = 'none';
       document.getElementById('game-screen').style.display  = 'block';
@@ -1825,12 +1829,12 @@
       }
     }
 
-    document.getElementById('start-relogio-btn').addEventListener('click', () => {
+    document.getElementById('start-relogio-btn').addEventListener('click', async () => {
       timerCorrect = 0; timerScore = 0; skipsLeft = 3;
-      skipsLeft = 3;
       document.getElementById('skip-btn').disabled = false;
       document.getElementById('skips-left-lbl').style.display = 'inline';
       document.getElementById('skips-left-lbl').textContent   = '3 skips';
+      await ensureMasterList();
       buildPool();
       const lbl = { 30:'30 segundos', 60:'1 minuto', 120:'2 minutos' }[selectedTime];
       showCountdown(lbl, () => {
@@ -2009,10 +2013,11 @@
       startDesafioGame();
     });
 
-    function startDesafioGame() {
+    async function startDesafioGame() {
       timerCorrect = 0; timerScore = 0;
       document.getElementById('skip-btn').disabled = false;
       document.getElementById('skips-left-lbl').style.display = 'none';
+      await ensureMasterList();
       buildPool();
       showCountdown('1 minuto · Desafio', () => {
         prepareTimerGameScreen();
@@ -2031,6 +2036,7 @@
       timerCorrect = 0; timerScore = 0;
       document.getElementById('skip-btn').disabled = false;
       document.getElementById('skips-left-lbl').style.display = 'none';
+      await ensureMasterList();
       buildPool();
       showCountdown('1 minuto · Respondendo', () => {
         prepareTimerGameScreen();
