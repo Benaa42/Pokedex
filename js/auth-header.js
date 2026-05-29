@@ -11,17 +11,22 @@
     if (user) {
       loginEl.style.display = 'none';
       userEl.style.display  = 'flex';
+      // Mostra displayName imediatamente (definido no cadastro)
+      if (usernameEl && user.displayName) usernameEl.textContent = user.displayName;
+      // Confirma/atualiza pelo Firestore (fonte mais confiável)
       db.collection('users').doc(user.uid).get()
         .then(function (doc) {
-          if (usernameEl) {
-            usernameEl.textContent =
-              (doc.exists && doc.data().username)
-                ? doc.data().username
-                : user.email.split('@')[0];
+          if (!usernameEl) return;
+          if (doc.exists && doc.data().username) {
+            usernameEl.textContent = doc.data().username;
+          } else if (user.displayName) {
+            usernameEl.textContent = user.displayName;
+          } else {
+            usernameEl.textContent = user.email.split('@')[0];
           }
         })
         .catch(function () {
-          if (usernameEl) usernameEl.textContent = user.email.split('@')[0];
+          if (usernameEl) usernameEl.textContent = user.displayName || user.email.split('@')[0];
         });
     } else {
       loginEl.style.display = 'flex';

@@ -236,6 +236,10 @@
       var doc  = await db.collection('users').doc(user.uid).get();
       var data = doc.exists ? doc.data() : {};
       var username = data.username || user.displayName || user.email.split('@')[0];
+      // Sincroniza displayName se estiver desatualizado
+      if (data.username && user.displayName !== data.username) {
+        user.updateProfile({ displayName: data.username }).catch(function(){});
+      }
 
       document.getElementById('av-letter').textContent    = username[0].toUpperCase();
       document.getElementById('prof-username').textContent = username;

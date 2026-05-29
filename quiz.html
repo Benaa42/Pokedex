@@ -1934,8 +1934,18 @@
         msgEl.textContent = 'Você não pode se desafiar.'; return;
       }
 
-      const snap = await db.collection('users')
-        .where('username', '==', username).limit(1).get().catch(() => null);
+      /* Busca case-insensitive: usernameLower primeiro, fallback para username exato */
+      let snap = null;
+      try {
+        snap = await db.collection('users')
+          .where('usernameLower', '==', username.toLowerCase()).limit(1).get();
+        if (snap.empty) {
+          snap = await db.collection('users')
+            .where('username', '==', username).limit(1).get();
+        }
+      } catch(e) {
+        msgEl.textContent = 'Erro ao buscar treinador. Verifique sua conexão.'; return;
+      }
       if (!snap || snap.empty) { msgEl.textContent = 'Treinador não encontrado.'; return; }
 
       const doc = snap.docs[0];

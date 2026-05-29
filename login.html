@@ -187,8 +187,8 @@
       <!-- Login -->
       <form class="auth-form" id="form-login" autocomplete="on">
         <div class="field-group">
-          <label class="field-label" for="login-email">E-mail</label>
-          <input class="field-input" type="email" id="login-email" placeholder="seu@email.com" autocomplete="email" required>
+          <label class="field-label" for="login-email">E-mail ou nome de treinador</label>
+          <input class="field-input" type="text" id="login-email" placeholder="seu@email.com ou AshKetchum42" autocomplete="username" required>
         </div>
         <div class="field-group">
           <label class="field-label" for="login-pw">Senha</label>
@@ -248,18 +248,39 @@
       fReg.classList.remove('hidden'); fLogin.classList.add('hidden');
     });
 
-    // ── Login ────────────────────────────────────
+    // ── Login (email ou nome de treinador) ───────
     fLogin.addEventListener('submit', async function(e) {
       e.preventDefault();
-      var msgEl = document.getElementById('login-msg');
-      var btn   = document.getElementById('login-btn');
-      var email = document.getElementById('login-email').value.trim();
-      var pw    = document.getElementById('login-pw').value;
+      var msgEl  = document.getElementById('login-msg');
+      var btn    = document.getElementById('login-btn');
+      var input  = document.getElementById('login-email').value.trim();
+      var pw     = document.getElementById('login-pw').value;
+      var email  = input;
 
       msgEl.className = 'msg'; msgEl.textContent = '';
       btn.disabled = true; btn.textContent = 'Entrando...';
 
       try {
+        /* Se não contém @, trata como nome de treinador → busca email */
+        if (!input.includes('@')) {
+          btn.textContent = 'Buscando treinador...';
+          var snap = await db.collection('users')
+            .where('usernameLower', '==', input.toLowerCase())
+            .limit(1).get();
+          if (snap.empty) {
+            /* Fallback: busca também pelo campo username (contas antigas) */
+            snap = await db.collection('users')
+              .where('username', '==', input)
+              .limit(1).get();
+          }
+          if (snap.empty) {
+            msgEl.className = 'msg error';
+            msgEl.textContent = 'Treinador não encontrado.';
+            btn.disabled = false; btn.textContent = 'ENTRAR'; return;
+          }
+          email = snap.docs[0].data().email;
+          btn.textContent = 'Entrando...';
+        }
         await auth.signInWithEmailAndPassword(email, pw);
         window.location.href = 'index.html';
       } catch(err) {
@@ -281,15 +302,21 @@
 
       msgEl.className = 'msg'; msgEl.textContent = '';
 
-      if (!username)    { msgEl.className='msg error'; msgEl.textContent='Escolha um nome de treinador.'; return; }
-      if (pw !== pw2)   { msgEl.className='msg error'; msgEl.textContent='As senhas não coincidem.'; return; }
+      if (!username)             { msgEl.className='msg error'; msgEl.textContent='Escolha um nome de treinador.'; return; }
+      if (username.includes(' ')){ msgEl.className='msg error'; msgEl.textContent='O nome não pode conter espaços.'; return; }
+      if (pw !== pw2)            { msgEl.className='msg error'; msgEl.textContent='As senhas não coincidem.'; return; }
 
       btn.disabled = true; btn.textContent = 'Verificando...';
 
-      /* Verifica unicidade do username */
+      /* Verifica unicidade (case-insensitive via usernameLower) */
       try {
-        var usernameSnap = await db.collection('users').where('username','==', username).limit(1).get();
-        if (!usernameSnap.empty) {
+        var lowerName    = username.toLowerCase();
+        var uniqueSnap   = await db.collection('users').where('usernameLower','==', lowerName).limit(1).get();
+        if (uniqueSnap.empty) {
+          /* Fallback: verifica campo username para contas antigas */
+          uniqueSnap = await db.collection('users').where('username','==', username).limit(1).get();
+        }
+        if (!uniqueSnap.empty) {
           msgEl.className = 'msg error';
           msgEl.textContent = 'Este nome de treinador já está em uso. Escolha outro.';
           btn.disabled = false; btn.textContent = 'CRIAR CONTA'; return;
@@ -299,15 +326,17 @@
       btn.textContent = 'Criando conta...';
 
       try {
+        var lowerName = username.toLowerCase();
         var cred = await auth.createUserWithEmailAndPassword(email, pw);
         await cred.user.updateProfile({ displayName: username });
         await db.collection('users').doc(cred.user.uid).set({
-          username:    username,
-          email:       email,
-          createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
-          totalGames:  0,
-          totalScore:  0,
-          bestScore:   0,
+          username:      username,
+          usernameLower: lowerName,
+          email:         email,
+          createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
+          totalGames:    0,
+          totalScore:    0,
+          bestScore:     0,
         });
         window.location.href = 'index.html';
       } catch(err) {
