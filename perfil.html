@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POKÉBENA — Perfil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07070f; --surface: #0e0e1c; --surface-2: #15152a;
+      --text: #e2e2f0; --muted: #5a5a7a; --border: rgba(255,255,255,0.06);
+      --p1: #F85888; --p2: #6890F0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Rajdhani', sans-serif; min-height: 100vh; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 40% at 50% -10%, rgba(248,208,48,.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 90%, rgba(248,88,136,.09) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(112,56,248,.07) 0%, transparent 55%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── HEADER ─────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: rgba(7,7,15,.88); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 860px; margin: 0 auto; padding: .9rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .back-link {
+      display: flex; align-items: center; gap: .4rem; color: var(--muted);
+      text-decoration: none; font-family: 'Orbitron', monospace; font-size: .6rem;
+      letter-spacing: .15em; text-transform: uppercase; transition: color .2s;
+    }
+    .back-link:hover { color: var(--text); }
+    .logo {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: clamp(.85rem, 2vw, 1.2rem); letter-spacing: .1em;
+      background: linear-gradient(130deg, #F8D030, #F85888);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    /* ── MAIN ───────────────────────────────────── */
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; position: relative; z-index: 1; }
+
+    /* Loading */
+    #loading {
+      padding: 5rem; text-align: center;
+      font-family: 'Orbitron', monospace; font-size: .58rem;
+      letter-spacing: .22em; color: var(--muted);
+    }
+
+    /* ── PROFILE HEADER ─────────────────────────── */
+    .profile-hero {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 24px; padding: 1.75rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      margin-bottom: 1.1rem;
+    }
+    .avatar {
+      width: 76px; height: 76px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', monospace; font-weight: 900; font-size: 2rem;
+      background: linear-gradient(135deg, rgba(248,208,48,.22), rgba(248,88,136,.18));
+      border: 2px solid rgba(248,208,48,.3); color: #F8D030; text-transform: uppercase;
+      box-shadow: 0 0 24px rgba(248,208,48,.14);
+    }
+    .prof-info { flex: 1; min-width: 0; }
+    .prof-username {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: clamp(1rem, 3vw, 1.5rem); letter-spacing: .08em;
+      color: var(--text); margin-bottom: .2rem;
+    }
+    .prof-email { font-size: .85rem; color: var(--muted); font-weight: 500; margin-bottom: .4rem; }
+    .prof-since {
+      font-family: 'Orbitron', monospace; font-size: .44rem;
+      letter-spacing: .14em; color: var(--muted);
+    }
+    #logout-btn {
+      background: transparent; border: 1px solid rgba(248,80,80,.28);
+      color: rgba(248,80,80,.55); font-family: 'Orbitron', monospace;
+      font-size: .47rem; letter-spacing: .14em; text-transform: uppercase;
+      padding: .48rem 1rem; border-radius: 50px; cursor: pointer;
+      transition: all .18s; flex-shrink: 0;
+    }
+    #logout-btn:hover { border-color: #f87171; color: #f87171; }
+
+    /* ── STATS ──────────────────────────────────── */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: .65rem; margin-bottom: 1.1rem;
+    }
+    .stat-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: .9rem .7rem; text-align: center;
+    }
+    .stat-lbl {
+      font-family: 'Orbitron', monospace; font-size: .44rem;
+      letter-spacing: .16em; color: var(--muted); margin-bottom: .3rem;
+      text-transform: uppercase;
+    }
+    .stat-val {
+      font-family: 'Orbitron', monospace; font-weight: 900; font-size: 1.3rem; line-height: 1;
+    }
+    #sv-games  { color: #F8D030; }
+    #sv-total  { color: #a855f7; }
+    #sv-best   { color: #4ade80; }
+    #sv-avg    { color: #F85888; }
+
+    /* ── HISTORY ────────────────────────────────── */
+    .section-label {
+      font-family: 'Orbitron', monospace; font-size: .5rem;
+      letter-spacing: .22em; color: var(--muted); margin-bottom: .85rem;
+    }
+    .history-list {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+    }
+    .hist-item {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .88rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    .hist-item:last-child { border-bottom: none; }
+    .hist-item:hover { background: rgba(255,255,255,.02); }
+
+    .hist-score {
+      font-family: 'Orbitron', monospace; font-weight: 900;
+      font-size: 1rem; color: #F8D030; flex-shrink: 0; min-width: 42px; text-align: right;
+    }
+    .hist-score.perfect { color: #4ade80; }
+    .hist-score.low     { color: #f87171; }
+
+    .hist-info { flex: 1; min-width: 0; }
+    .hist-pokemon {
+      font-size: .9rem; font-weight: 700; color: var(--text);
+      text-transform: capitalize; letter-spacing: .04em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hist-date {
+      font-family: 'Orbitron', monospace; font-size: .42rem;
+      letter-spacing: .14em; color: var(--muted); margin-top: .1rem;
+    }
+
+    .hist-lv {
+      font-family: 'Orbitron', monospace; font-size: .44rem;
+      letter-spacing: .12em; padding: .22rem .55rem; border-radius: 50px; flex-shrink: 0;
+    }
+    .hist-lv.lv1 { background: rgba(74,222,128,.12);  color: #4ade80; }
+    .hist-lv.lv2 { background: rgba(248,208,48,.12);  color: #F8D030; }
+    .hist-lv.lv3 { background: rgba(248,88,136,.12);  color: #F85888; }
+
+    .hist-empty {
+      padding: 3rem 1rem; text-align: center;
+      font-family: 'Orbitron', monospace; font-size: .5rem;
+      letter-spacing: .18em; color: var(--muted);
+    }
+
+    /* ── MOBILE ─────────────────────────────────── */
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      .profile-hero { flex-wrap: wrap; }
+      #logout-btn { order: 3; width: 100%; text-align: center; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="back-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Pokédex
+      </a>
+      <div class="logo">PERFIL</div>
+    </div>
+  </header>
+
+  <main>
+    <div id="loading">Carregando perfil...</div>
+
+    <div id="profile-content" style="display:none">
+
+      <div class="profile-hero">
+        <div class="avatar" id="av-letter">?</div>
+        <div class="prof-info">
+          <div class="prof-username" id="prof-username">—</div>
+          <div class="prof-email"    id="prof-email">—</div>
+          <div class="prof-since"    id="prof-since"></div>
+        </div>
+        <button id="logout-btn">↩ Sair</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-lbl">Partidas</div><div class="stat-val" id="sv-games">0</div></div>
+        <div class="stat-box"><div class="stat-lbl">Total pts</div><div class="stat-val" id="sv-total">0</div></div>
+        <div class="stat-box"><div class="stat-lbl">Recorde</div><div class="stat-val" id="sv-best">0</div></div>
+        <div class="stat-box"><div class="stat-lbl">Média</div><div class="stat-val" id="sv-avg">0</div></div>
+      </div>
+
+      <div class="section-label">Histórico recente</div>
+      <div class="history-list" id="history-list">
+        <div class="hist-empty">Nenhuma partida registrada ainda</div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-init.js"></script>
+  <script>
+    auth.onAuthStateChanged(async function(user) {
+      if (!user) { window.location.href = 'login.html'; return; }
+
+      document.getElementById('loading').style.display         = 'none';
+      document.getElementById('profile-content').style.display = 'block';
+
+      // Dados do usuário
+      var doc  = await db.collection('users').doc(user.uid).get();
+      var data = doc.exists ? doc.data() : {};
+      var username = data.username || user.displayName || user.email.split('@')[0];
+
+      document.getElementById('av-letter').textContent    = username[0].toUpperCase();
+      document.getElementById('prof-username').textContent = username;
+      document.getElementById('prof-email').textContent    = user.email;
+
+      if (data.createdAt) {
+        var d = data.createdAt.toDate();
+        document.getElementById('prof-since').textContent =
+          'Treinador desde ' + d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      }
+
+      // Estatísticas
+      var totalGames = data.totalGames || 0;
+      var totalScore = data.totalScore || 0;
+      var bestScore  = data.bestScore  || 0;
+      var avg = totalGames > 0 ? Math.round(totalScore / totalGames) : 0;
+
+      document.getElementById('sv-games').textContent = totalGames;
+      document.getElementById('sv-total').textContent = totalScore;
+      document.getElementById('sv-best').textContent  = bestScore;
+      document.getElementById('sv-avg').textContent   = avg;
+
+      // Histórico
+      var snap = await db.collection('users').doc(user.uid)
+        .collection('gameHistory')
+        .orderBy('date', 'desc')
+        .limit(20)
+        .get();
+
+      if (!snap.empty) {
+        var listEl = document.getElementById('history-list');
+        listEl.innerHTML = '';
+        snap.forEach(function(d) {
+          var g = d.data();
+          var score = g.score || 0;
+          var sClass = score === 100 ? 'perfect' : score < 40 ? 'low' : '';
+          var date   = g.date ? g.date.toDate().toLocaleDateString('pt-BR') : '—';
+          var lv     = g.level || 1;
+          var item   = document.createElement('div');
+          item.className = 'hist-item';
+          item.innerHTML =
+            '<div class="hist-score ' + sClass + '">' + score + '</div>' +
+            '<div class="hist-info">' +
+              '<div class="hist-pokemon">' + (g.pokemon || '?').replace(/-/g, ' ') + '</div>' +
+              '<div class="hist-date">' + date + '</div>' +
+            '</div>' +
+            '<div class="hist-lv lv' + lv + '">NV ' + lv + '</div>';
+          listEl.appendChild(item);
+        });
+      }
+
+      // Logout
+      document.getElementById('logout-btn').addEventListener('click', async function() {
+        await auth.signOut();
+        window.location.href = 'index.html';
+      });
+    });
+  </script>
+</body>
+</html>
