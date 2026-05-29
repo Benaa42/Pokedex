@@ -228,9 +228,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="js/firebase-init.js"></script>
   <script>
-    // Se já logado, vai para index
+    // Flag que impede redirect automático durante cadastro/login
+    // (onAuthStateChanged dispara ao criar conta, antes dos awaits no Firestore)
+    var isProcessing = false;
+
     auth.onAuthStateChanged(function(user) {
-      if (user) window.location.href = 'index.html';
+      if (user && !isProcessing) window.location.href = 'index.html';
     });
 
     // ── Tabs ─────────────────────────────────────
@@ -259,6 +262,7 @@
 
       msgEl.className = 'msg'; msgEl.textContent = '';
       btn.disabled = true; btn.textContent = 'Entrando...';
+      isProcessing = true;
 
       try {
         /* Se não contém @, trata como nome de treinador — busca em 3 etapas */
@@ -313,8 +317,10 @@
           }
         } catch(e) {}
 
+        isProcessing = false;
         window.location.href = 'index.html';
       } catch(err) {
+        isProcessing = false;
         msgEl.className = 'msg error';
         msgEl.textContent = errMsg(err.code);
         btn.disabled = false; btn.textContent = 'ENTRAR';
@@ -338,6 +344,7 @@
       if (pw !== pw2)            { msgEl.className='msg error'; msgEl.textContent='As senhas não coincidem.'; return; }
 
       btn.disabled = true; btn.textContent = 'Verificando...';
+      isProcessing = true;
 
       /* Verifica unicidade via coleção 'usernames' (lookup direto por ID) */
       var lowerName = username.toLowerCase();
@@ -369,8 +376,10 @@
         await db.collection('usernames').doc(lowerName).set({
           uid: cred.user.uid, username: username, email: email,
         });
+        isProcessing = false;
         window.location.href = 'index.html';
       } catch(err) {
+        isProcessing = false;
         msgEl.className = 'msg error';
         msgEl.textContent = errMsg(err.code);
         btn.disabled = false; btn.textContent = 'CRIAR CONTA';
