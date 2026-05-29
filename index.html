@@ -990,6 +990,33 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 50px; }
 
+    /* ── AUTH HEADER ────────────────────────────────── */
+    .auth-link {
+      display: flex; align-items: center; gap: .35rem;
+      color: var(--muted); text-decoration: none;
+      font-family: 'Orbitron', monospace; font-size: .52rem;
+      letter-spacing: .13em; text-transform: uppercase;
+      border: 1px solid var(--border); padding: .4rem .9rem;
+      border-radius: 50px; transition: all .18s; white-space: nowrap;
+    }
+    .auth-link:hover { border-color: rgba(248,208,48,.4); color: #F8D030; }
+    .header-user { display: flex; align-items: center; gap: .45rem; }
+    .header-username-link {
+      display: flex; align-items: center; gap: .35rem; text-decoration: none;
+      font-family: 'Orbitron', monospace; font-size: .52rem;
+      letter-spacing: .12em; color: #F8D030;
+      border: 1px solid rgba(248,208,48,.3); padding: .4rem .9rem;
+      border-radius: 50px; transition: all .18s; white-space: nowrap; max-width: 130px;
+    }
+    .header-username-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header-username-link:hover { border-color: rgba(248,208,48,.6); }
+    .logout-header-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      font-family: 'Orbitron', monospace; font-size: .5rem; letter-spacing: .1em;
+      padding: .4rem .7rem; border-radius: 50px; cursor: pointer; transition: all .18s;
+    }
+    .logout-header-btn:hover { border-color: rgba(248,80,80,.4); color: #f87171; }
+
     /* ── MOBILE RESPONSIVO ─────────────────────────── */
     @media (max-width: 640px) {
       /* Header: busca vai para segunda linha */
@@ -1069,6 +1096,20 @@
           Aleatório
         </button>
         <span id="count-badge">Carregando...</span>
+
+        <!-- Auth -->
+        <a href="login.html" id="header-auth-login" class="auth-link" style="display:none">
+          <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          Entrar
+        </a>
+        <div id="header-auth-user" class="header-user" style="display:none">
+          <a href="perfil.html" class="header-username-link">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            <span id="header-auth-username">...</span>
+          </a>
+          <button class="logout-header-btn" id="header-logout-btn" title="Sair">↩</button>
+        </div>
+
       </div>
     </div>
   </header>
@@ -1545,5 +1586,12 @@
     init();
   })();
   </script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-init.js"></script>
+  <script src="js/auth-header.js"></script>
 </body>
 </html>
