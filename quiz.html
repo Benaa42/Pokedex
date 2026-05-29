@@ -393,9 +393,10 @@
       position: absolute; inset: 0; z-index: 30;
       display: flex; align-items: center; justify-content: center;
       background: rgba(7,7,15,.93); border-radius: 24px;
-      pointer-events: none; transition: opacity .45s ease;
+      pointer-events: none;
+      /* sem transition aqui: overlay aparece instantaneamente ao ser inserido */
     }
-    .pb-overlay.pb-out { opacity: 0; }
+    .pb-overlay.pb-out { opacity: 0; transition: opacity .45s ease; }
 
     .pb-wrap {
       animation:
@@ -893,6 +894,15 @@
       document.getElementById('submit-btn').disabled  = false;
       document.getElementById('give-up-btn').disabled = false;
 
+      /* Oculta imediatamente qualquer sprite visível do round anterior */
+      ['mystery-sprite', 'sprite-a', 'sprite-b'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('revealed');
+        el.style.transition = 'none';
+        el.style.opacity    = '0';
+        el.style.filter     = filterString();
+      });
+
       /* Buscar Pokémon */
       const pickA = pickNext();
       const pickB = currentLevel === 3 ? pickNext() : null;
@@ -1257,6 +1267,14 @@
     document.getElementById('back-to-setup-btn').addEventListener('click', () => {
       /* Remove overlay da pokébola se estiver ativa */
       if (currentPokeballOverlay) { currentPokeballOverlay.remove(); currentPokeballOverlay = null; }
+      /* Oculta sprites para evitar flash ao iniciar novo jogo */
+      ['mystery-sprite', 'sprite-a', 'sprite-b'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('revealed');
+        el.style.transition = 'none';
+        el.style.opacity    = '0';
+        el.style.filter     = 'brightness(0)';
+      });
       /* Volta para tela de configuração */
       document.getElementById('game-screen').style.display  = 'none';
       document.getElementById('setup-screen').style.display = '';
