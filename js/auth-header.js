@@ -13,16 +13,27 @@
       userEl.style.display  = 'flex';
       // Mostra displayName imediatamente (definido no cadastro)
       if (usernameEl && user.displayName) usernameEl.textContent = user.displayName;
-      // Confirma/atualiza pelo Firestore (fonte mais confiável)
+      // Confirma/atualiza pelo Firestore e garante entrada em 'usernames' (migração)
       db.collection('users').doc(user.uid).get()
         .then(function (doc) {
           if (!usernameEl) return;
+          var uname = (doc.exists && doc.data().username)
+            ? doc.data().username
+            : (user.displayName || user.email.split('@')[0]);
+          usernameEl.textContent = uname;
+
+          // Migração: garante que usernames/{lowerName} existe para contas antigas
           if (doc.exists && doc.data().username) {
-            usernameEl.textContent = doc.data().username;
-          } else if (user.displayName) {
-            usernameEl.textContent = user.displayName;
-          } else {
-            usernameEl.textContent = user.email.split('@')[0];
+            var lowerName = doc.data().username.toLowerCase();
+            db.collection('usernames').doc(lowerName).get().then(function (unameDoc) {
+              if (!unameDoc.exists) {
+                db.collection('usernames').doc(lowerName).set({
+                  uid:      user.uid,
+                  username: doc.data().username,
+                  email:    user.email,
+                }).catch(function () {});
+              }
+            }).catch(function () {});
           }
         })
         .catch(function () {
