@@ -1934,22 +1934,16 @@
         msgEl.textContent = 'Você não pode se desafiar.'; return;
       }
 
-      /* Busca case-insensitive: usernameLower primeiro, fallback para username exato */
-      let snap = null;
+      /* Lookup direto na coleção 'usernames' (sem query, sem índice) */
+      let unameDoc = null;
       try {
-        snap = await db.collection('users')
-          .where('usernameLower', '==', username.toLowerCase()).limit(1).get();
-        if (snap.empty) {
-          snap = await db.collection('users')
-            .where('username', '==', username).limit(1).get();
-        }
+        unameDoc = await db.collection('usernames').doc(username.toLowerCase()).get();
       } catch(e) {
         msgEl.textContent = 'Erro ao buscar treinador. Verifique sua conexão.'; return;
       }
-      if (!snap || snap.empty) { msgEl.textContent = 'Treinador não encontrado.'; return; }
+      if (!unameDoc || !unameDoc.exists) { msgEl.textContent = 'Treinador não encontrado.'; return; }
 
-      const doc = snap.docs[0];
-      foundOpponent = { uid: doc.id, username: doc.data().username };
+      foundOpponent = { uid: unameDoc.data().uid, username: unameDoc.data().username };
       const letter = foundOpponent.username[0].toUpperCase();
       resultEl.innerHTML =
         `<div class="opponent-card">` +

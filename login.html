@@ -261,24 +261,16 @@
       btn.disabled = true; btn.textContent = 'Entrando...';
 
       try {
-        /* Se não contém @, trata como nome de treinador → busca email */
+        /* Se não contém @, trata como nome de treinador → lookup direto */
         if (!input.includes('@')) {
           btn.textContent = 'Buscando treinador...';
-          var snap = await db.collection('users')
-            .where('usernameLower', '==', input.toLowerCase())
-            .limit(1).get();
-          if (snap.empty) {
-            /* Fallback: busca também pelo campo username (contas antigas) */
-            snap = await db.collection('users')
-              .where('username', '==', input)
-              .limit(1).get();
-          }
-          if (snap.empty) {
+          var unameDoc = await db.collection('usernames').doc(input.toLowerCase()).get();
+          if (!unameDoc.exists) {
             msgEl.className = 'msg error';
             msgEl.textContent = 'Treinador não encontrado.';
             btn.disabled = false; btn.textContent = 'ENTRAR'; return;
           }
-          email = snap.docs[0].data().email;
+          email = unameDoc.data().email;
           btn.textContent = 'Entrando...';
         }
         await auth.signInWithEmailAndPassword(email, pw);
@@ -308,15 +300,11 @@
 
       btn.disabled = true; btn.textContent = 'Verificando...';
 
-      /* Verifica unicidade (case-insensitive via usernameLower) */
+      /* Verifica unicidade via coleção 'usernames' (lookup direto por ID) */
+      var lowerName = username.toLowerCase();
       try {
-        var lowerName    = username.toLowerCase();
-        var uniqueSnap   = await db.collection('users').where('usernameLower','==', lowerName).limit(1).get();
-        if (uniqueSnap.empty) {
-          /* Fallback: verifica campo username para contas antigas */
-          uniqueSnap = await db.collection('users').where('username','==', username).limit(1).get();
-        }
-        if (!uniqueSnap.empty) {
+        var existsDoc = await db.collection('usernames').doc(lowerName).get();
+        if (existsDoc.exists) {
           msgEl.className = 'msg error';
           msgEl.textContent = 'Este nome de treinador já está em uso. Escolha outro.';
           btn.disabled = false; btn.textContent = 'CRIAR CONTA'; return;
@@ -326,9 +314,9 @@
       btn.textContent = 'Criando conta...';
 
       try {
-        var lowerName = username.toLowerCase();
         var cred = await auth.createUserWithEmailAndPassword(email, pw);
         await cred.user.updateProfile({ displayName: username });
+        /* Salva perfil do usuário */
         await db.collection('users').doc(cred.user.uid).set({
           username:      username,
           usernameLower: lowerName,
@@ -337,6 +325,10 @@
           totalGames:    0,
           totalScore:    0,
           bestScore:     0,
+        });
+        /* Salva mapeamento username → uid/email (lookup rápido) */
+        await db.collection('usernames').doc(lowerName).set({
+          uid: cred.user.uid, username: username, email: email,
         });
         window.location.href = 'index.html';
       } catch(err) {
