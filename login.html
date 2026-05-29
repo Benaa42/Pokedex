@@ -284,7 +284,19 @@
       if (!username)    { msgEl.className='msg error'; msgEl.textContent='Escolha um nome de treinador.'; return; }
       if (pw !== pw2)   { msgEl.className='msg error'; msgEl.textContent='As senhas não coincidem.'; return; }
 
-      btn.disabled = true; btn.textContent = 'Criando conta...';
+      btn.disabled = true; btn.textContent = 'Verificando...';
+
+      /* Verifica unicidade do username */
+      try {
+        var usernameSnap = await db.collection('users').where('username','==', username).limit(1).get();
+        if (!usernameSnap.empty) {
+          msgEl.className = 'msg error';
+          msgEl.textContent = 'Este nome de treinador já está em uso. Escolha outro.';
+          btn.disabled = false; btn.textContent = 'CRIAR CONTA'; return;
+        }
+      } catch(e) {}
+
+      btn.textContent = 'Criando conta...';
 
       try {
         var cred = await auth.createUserWithEmailAndPassword(email, pw);
