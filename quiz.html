@@ -1934,16 +1934,46 @@
         msgEl.textContent = 'Você não pode se desafiar.'; return;
       }
 
-      /* Lookup direto na coleção 'usernames' (sem query, sem índice) */
-      let unameDoc = null;
-      try {
-        unameDoc = await db.collection('usernames').doc(username.toLowerCase()).get();
-      } catch(e) {
-        msgEl.textContent = 'Erro ao buscar treinador. Verifique sua conexão.'; return;
-      }
-      if (!unameDoc || !unameDoc.exists) { msgEl.textContent = 'Treinador não encontrado.'; return; }
+      /* Busca em 3 etapas para cobrir contas antigas e novas */
+      let oppUid = null, oppUsername = null;
+      const lowerSearch = username.toLowerCase();
 
-      foundOpponent = { uid: unameDoc.data().uid, username: unameDoc.data().username };
+      try {
+        /* 1) Lookup rápido na coleção usernames */
+        const unameDoc = await db.collection('usernames').doc(lowerSearch).get();
+        if (unameDoc.exists) {
+          oppUid      = unameDoc.data().uid;
+          oppUsername = unameDoc.data().username;
+        }
+      } catch(e) {}
+
+      if (!oppUid) {
+        try {
+          /* 2) Query por usernameLower (case-insensitive) */
+          const snap = await db.collection('users')
+            .where('usernameLower', '==', lowerSearch).limit(1).get();
+          if (!snap.empty) {
+            oppUid      = snap.docs[0].id;
+            oppUsername = snap.docs[0].data().username;
+          }
+        } catch(e) {}
+      }
+
+      if (!oppUid) {
+        try {
+          /* 3) Query por username exato (contas muito antigas) */
+          const snap = await db.collection('users')
+            .where('username', '==', username).limit(1).get();
+          if (!snap.empty) {
+            oppUid      = snap.docs[0].id;
+            oppUsername = snap.docs[0].data().username;
+          }
+        } catch(e) {}
+      }
+
+      if (!oppUid) { msgEl.textContent = 'Treinador não encontrado.'; return; }
+
+      foundOpponent = { uid: oppUid, username: oppUsername };
       const letter = foundOpponent.username[0].toUpperCase();
       resultEl.innerHTML =
         `<div class="opponent-card">` +
