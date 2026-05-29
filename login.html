@@ -261,19 +261,58 @@
       btn.disabled = true; btn.textContent = 'Entrando...';
 
       try {
-        /* Se não contém @, trata como nome de treinador → lookup direto */
+        /* Se não contém @, trata como nome de treinador — busca em 3 etapas */
         if (!input.includes('@')) {
           btn.textContent = 'Buscando treinador...';
-          var unameDoc = await db.collection('usernames').doc(input.toLowerCase()).get();
-          if (!unameDoc.exists) {
+          var lowerInput = input.toLowerCase();
+          var resolvedEmail = null;
+
+          /* 1) usernames/{lower} — lookup direto */
+          try {
+            var ud = await db.collection('usernames').doc(lowerInput).get();
+            if (ud.exists) resolvedEmail = ud.data().email;
+          } catch(e) {}
+
+          /* 2) users onde usernameLower == lower */
+          if (!resolvedEmail) {
+            try {
+              var s2 = await db.collection('users').where('usernameLower','==',lowerInput).limit(1).get();
+              if (!s2.empty) resolvedEmail = s2.docs[0].data().email;
+            } catch(e) {}
+          }
+
+          /* 3) users onde username == input (exato, contas antigas) */
+          if (!resolvedEmail) {
+            try {
+              var s3 = await db.collection('users').where('username','==',input).limit(1).get();
+              if (!s3.empty) resolvedEmail = s3.docs[0].data().email;
+            } catch(e) {}
+          }
+
+          if (!resolvedEmail) {
             msgEl.className = 'msg error';
             msgEl.textContent = 'Treinador não encontrado.';
             btn.disabled = false; btn.textContent = 'ENTRAR'; return;
           }
-          email = unameDoc.data().email;
+          email = resolvedEmail;
           btn.textContent = 'Entrando...';
         }
-        await auth.signInWithEmailAndPassword(email, pw);
+
+        var cred = await auth.signInWithEmailAndPassword(email, pw);
+
+        /* Garante que usernames/{lower} existe (migração para contas antigas) */
+        try {
+          var uDoc = await db.collection('users').doc(cred.user.uid).get();
+          if (uDoc.exists && uDoc.data().username) {
+            var ln = uDoc.data().username.toLowerCase();
+            var unRef = db.collection('usernames').doc(ln);
+            var unDoc = await unRef.get();
+            if (!unDoc.exists) {
+              await unRef.set({ uid: cred.user.uid, username: uDoc.data().username, email: cred.user.email });
+            }
+          }
+        } catch(e) {}
+
         window.location.href = 'index.html';
       } catch(err) {
         msgEl.className = 'msg error';
