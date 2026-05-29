@@ -708,6 +708,14 @@
     }
 
     /* ── AUDIO & ANIMAÇÃO DE INTRO ──────────────── */
+    const sfxCorrect = new Audio('BGM/Correct.mp3');
+    const sfxWrong   = new Audio('BGM/Wrong.mp3');
+    sfxCorrect.volume = 0.7;
+    sfxWrong.volume   = 0.7;
+
+    function playCorrect() { sfxCorrect.currentTime = 0; sfxCorrect.play().catch(() => {}); }
+    function playWrong()   { sfxWrong.currentTime   = 0; sfxWrong.play().catch(() => {}); }
+
     function playWhosThatPokemon() {
       const a = new Audio('https://www.myinstants.com/media/sounds/quem-e-esse-pokemon-011.mp3');
       a.volume = 0.75;
@@ -1140,14 +1148,14 @@
           document.getElementById('remaining-count').textContent = guessedB ? 0 : 1;
           showFeedback('✓ Pokémon da esquerda (◀) correto!', 'correct');
           answerInput.value = '';
-          if (guessedB) endRound(true);
+          if (guessedB) endRound(true); else playCorrect();
         } else if (!guessedB && guess === ansB) {
           guessedB = true;
           revealDuo('b');
           document.getElementById('remaining-count').textContent = guessedA ? 0 : 1;
           showFeedback('✓ Pokémon da direita (▶) correto!', 'correct');
           answerInput.value = '';
-          if (guessedA) endRound(true);
+          if (guessedA) endRound(true); else playCorrect();
         } else if ((guessedA && guess === ansA) || (guessedB && guess === ansB)) {
           showFeedback('Já adivinhado! Tente o outro.', 'info');
           answerInput.value = '';
@@ -1175,6 +1183,7 @@
         correctCount++;
         streak++;
         totalScore += roundScore;
+        playCorrect();
         showFeedback(currentLevel === 3 ? '🏆 Os dois corretos!' : '✓ Correto!', 'correct');
         updateScoreboard();
       } else {
@@ -1223,6 +1232,7 @@
     }
 
     function errar() {
+      playWrong();
       answerInput.classList.remove('shake');
       void answerInput.offsetWidth;
       answerInput.classList.add('shake');
