@@ -894,7 +894,7 @@
       document.getElementById('submit-btn').disabled  = false;
       document.getElementById('give-up-btn').disabled = false;
 
-      /* Oculta imediatamente qualquer sprite visível do round anterior */
+      /* Oculta sprites e reseta labels imediatamente (antes de qualquer await) */
       ['mystery-sprite', 'sprite-a', 'sprite-b'].forEach(id => {
         const el = document.getElementById(id);
         el.classList.remove('revealed');
@@ -902,6 +902,12 @@
         el.style.opacity    = '0';
         el.style.filter     = filterString();
       });
+      document.getElementById('mystery-label').textContent = '???';
+      document.getElementById('mystery-label').className   = 'mystery-label';
+      document.getElementById('label-a').textContent = '???';
+      document.getElementById('label-a').className   = 'duo-label a';
+      document.getElementById('label-b').textContent = '???';
+      document.getElementById('label-b').className   = 'duo-label b';
 
       /* Buscar Pokémon */
       const pickA = pickNext();
