@@ -1652,17 +1652,20 @@
           var item = document.createElement('div');
           item.className = 'notif-item';
 
-          var icon   = n.type === 'challenge' ? '⚔' : '🔔';
-          var title  = n.type === 'challenge' ? n.from.username + ' te desafiou!' : (n.title || 'Nova notificação');
-          var lvLbl  = n.level ? { 1:'Normal', 2:'Difícil', 3:'Extremo' }[n.level] || '' : '';
-          var sub    = n.type === 'challenge' ? 'Desafio · ' + lvLbl + ' · 1 minuto' : '';
+          var icon   = '⚔';
+          var lvLbl  = n.level ? ({ 1:'Normal', 2:'Difícil', 3:'Extremo' }[n.level] || '') : '';
+          var rndLbl = n.round ? ' · R' + n.round : '';
+          var title  = n.type === 'challenge_turn'
+            ? n.from.username + ' — ' + (n.message || 'Sua vez!')
+            : n.from.username + ' te desafiou!';
+          var sub    = lvLbl + rndLbl + ' · 1 minuto';
 
           item.innerHTML =
             '<div class="notif-icon">' + icon + '</div>' +
             '<div class="notif-text">' + title +
               (sub ? '<div class="notif-sub">' + sub + '</div>' : '') +
             '</div>' +
-            (n.type === 'challenge' ? '<button class="notif-action" data-cid="' + n.challengeId + '" data-level="' + (n.level||1) + '">Responder</button>' : '') +
+            '<button class="notif-action" data-cid="' + n.challengeId + '">Jogar' + rndLbl + '</button>' +
             '<button class="notif-dismiss" data-id="' + doc.id + '" title="Dispensar">×</button>';
 
           item.querySelector('.notif-dismiss').addEventListener('click', function(e) {
@@ -1674,7 +1677,7 @@
           if (respBtn) {
             respBtn.addEventListener('click', function(e) {
               e.stopPropagation();
-              window.location.href = 'quiz.html#desafio-' + this.dataset.cid + '-' + this.dataset.level;
+              window.location.href = 'quiz.html#desafio-' + this.dataset.cid;
             });
           }
 

@@ -1007,21 +1007,39 @@
 
     /* ── CONSTANTES DE MODO ─────────────────────── */
     const DIFF_WEIGHT = { 1:1, 2:2, 3:4 };
-    const TIMER_CIRCUMFERENCE = 2 * Math.PI * 37; // raio 37 do SVG
+    const TIMER_CIRCUMFERENCE = 2 * Math.PI * 37;
 
     /* ── ESTADO DE MODO ──────────────────────────── */
-    let currentMode   = 'classico'; // 'classico' | 'relogio' | 'desafio'
-    let selectedTime  = 30;         // 30 | 60 | 120
+    let currentMode   = 'classico';
+    let selectedTime  = 30;
     let timerSecs     = 0;
     let timerInterval = null;
     let timerCorrect  = 0;
     let timerScore    = 0;
     let skipsLeft     = 3;
-    // Desafio
-    let foundOpponent     = null;   // { uid, username }
-    let currentChallengeId = null;
-    let desafioRole        = null;  // 'challenger' | 'opponent'
-    let notifUnsubscribe   = null;
+    // Desafio — 2 rodadas, mesma lista de Pokémon para os dois
+    let foundOpponent       = null;
+    let currentChallengeId  = null;
+    let desafioRole         = null;   // 'challenger' | 'opponent'
+    let challengeRound      = 1;      // 1 ou 2
+    let challengePokemonList = [];    // lista de IDs pré-gerada para a rodada
+    let challengePokemonIdx = 0;
+    let isChallengeMode     = false;
+    let challengeListenUnsub = null;
+    let notifUnsubscribe    = null;
+
+    /* ── GERA LISTA FIXA DE POKÉMON PARA DESAFIO ─── */
+    function generateChallengeList(count) {
+      const poolArr = masterList.filter(p =>
+        [...selectedGens].some(i => p.id >= GENS[i].min && p.id <= GENS[i].max)
+      );
+      const shuffled = [...poolArr];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled.slice(0, Math.min(count, shuffled.length)).map(p => p.id);
+    }
 
     /* ── FIREBASE: SALVAR PONTUAÇÃO ─────────────── */
     function saveQuizScore(score) {
@@ -1181,6 +1199,13 @@
     }
 
     function pickNext() {
+      /* Modo desafio: usa a lista pré-gerada e compartilhada pelos dois jogadores */
+      if (isChallengeMode) {
+        if (challengePokemonIdx >= challengePokemonList.length) challengePokemonIdx = 0;
+        const id = challengePokemonList[challengePokemonIdx++];
+        const found = masterList.find(p => p.id === id);
+        return found || { id, name: 'pokemon-' + id, url: 'https://pokeapi.co/api/v2/pokemon/' + id + '/' };
+      }
       if (poolIdx >= pool.length) buildPool();
       return pool[poolIdx++];
     }
@@ -1912,28 +1937,46 @@
     async function loadPendingChallenges() {
       if (typeof auth === 'undefined' || !auth.currentUser) return;
       const uid = auth.currentUser.uid;
-      const snap = await db.collection('challenges')
-        .where('opponent.uid', '==', uid)
-        .where('status', '==', 'round1_done')
-        .get().catch(() => null);
+      const lvLabels = { 1:'Normal', 2:'Difícil', 3:'Extremo' };
+
+      /* Busca desafios onde é a vez deste usuário */
+      const [snapChall, snapOpp] = await Promise.all([
+        db.collection('challenges').where('challenger.uid','==',uid).get().catch(() => null),
+        db.collection('challenges').where('opponent.uid','==',uid).get().catch(() => null),
+      ]);
+
+      const pending = [];
+      if (snapChall) snapChall.forEach(doc => {
+        const d = doc.data();
+        if (d.status === 'challenger_r1' || d.status === 'challenger_r2')
+          pending.push({ id: doc.id, data: d });
+      });
+      if (snapOpp) snapOpp.forEach(doc => {
+        const d = doc.data();
+        if (d.status === 'opponent_r1' || d.status === 'opponent_r2')
+          pending.push({ id: doc.id, data: d });
+      });
+
       const section = document.getElementById('pending-challenges-section');
       const list    = document.getElementById('pending-challenges-list');
-      if (!snap || snap.empty) { section.style.display = 'none'; return; }
+      if (!pending.length) { section.style.display = 'none'; return; }
+
       section.style.display = '';
       list.innerHTML = '';
-      snap.forEach(doc => {
-        const d = doc.data();
-        const lvLabels = {1:'Normal',2:'Difícil',3:'Extremo'};
+      const roundOf = { challenger_r1:'R1', challenger_r2:'R2', opponent_r1:'R1', opponent_r2:'R2' };
+      pending.forEach(({ id, data: d }) => {
+        const oppName = d.challenger.uid === uid ? d.opponent.username : d.challenger.username;
+        const rnd     = roundOf[d.status] || '';
         const card = document.createElement('div');
         card.className = 'challenge-card';
         card.innerHTML =
-          `<div class="ch-from"><div class="ch-from-name">${d.challenger.username}</div>` +
-          `<div class="ch-from-meta">Fez ${d.round1Score} pts · ${lvLabels[d.level]||''}</div></div>` +
-          `<button class="respond-btn" data-id="${doc.id}" data-level="${d.level}">Responder</button>`;
+          `<div class="ch-from"><div class="ch-from-name">vs ${oppName}</div>` +
+          `<div class="ch-from-meta">${lvLabels[d.level]||''} · ${rnd}</div></div>` +
+          `<button class="respond-btn" data-id="${id}">Jogar ${rnd}</button>`;
         list.appendChild(card);
       });
       list.querySelectorAll('.respond-btn').forEach(btn => {
-        btn.addEventListener('click', () => respondToChallenge(btn.dataset.id, parseInt(btn.dataset.level)));
+        btn.addEventListener('click', () => respondToChallenge(btn.dataset.id));
       });
     }
 
@@ -2007,131 +2050,234 @@
       startBtn.disabled = false;
     }
 
+    /* ── DESAFIO: CRIAR ─────────────────────────── */
     document.getElementById('start-desafio-btn').addEventListener('click', async () => {
       if (!foundOpponent || typeof auth === 'undefined' || !auth.currentUser) return;
       const user = auth.currentUser;
       const challenger = { uid: user.uid, username: user.displayName || user.email.split('@')[0] };
+
+      await ensureMasterList();
+
+      /* Gera duas listas idênticas para ambos os jogadores em cada rodada */
+      const pokemonR1 = generateChallengeList(100);
+      const pokemonR2 = generateChallengeList(100);
+
       const docRef = await db.collection('challenges').add({
         challenger, opponent: foundOpponent,
         level: currentLevel,
-        status: 'round1',
-        round1Score: null, round2Score: null,
+        gens: [...selectedGens],
+        status: 'challenger_r1',
+        pokemonR1, pokemonR2,
+        score_challenger_r1: null, score_opponent_r1: null,
+        score_challenger_r2: null, score_opponent_r2: null,
+        total_challenger: null, total_opponent: null,
         winner: null,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
-      currentChallengeId = docRef.id;
-      desafioRole = 'challenger';
-      /* Notifica oponente */
+
+      currentChallengeId   = docRef.id;
+      desafioRole          = 'challenger';
+      challengeRound       = 1;
+      challengePokemonList = pokemonR1;
+      challengePokemonIdx  = 0;
+      isChallengeMode      = true;
+
+      /* Notifica oponente: jogar Rodada 1 */
       db.collection('users').doc(foundOpponent.uid).collection('notifications').add({
-        type: 'challenge', challengeId: docRef.id,
-        from: challenger, level: currentLevel,
+        type: 'challenge_turn', challengeId: docRef.id,
+        from: challenger, level: currentLevel, round: 1,
+        message: 'Rodada 1 disponível',
         read: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       }).catch(() => {});
-      /* Inicia o jogo do desafiante */
-      startDesafioGame();
+
+      startChallengeRound('1 min · Desafio · R1');
     });
 
-    async function startDesafioGame() {
+    /* ── DESAFIO: INICIAR RODADA ─────────────────── */
+    function startChallengeRound(label) {
       timerCorrect = 0; timerScore = 0;
+      challengePokemonIdx = 0;
       document.getElementById('skip-btn').disabled = false;
       document.getElementById('skips-left-lbl').style.display = 'none';
-      await ensureMasterList();
-      buildPool();
-      showCountdown('1 minuto · Desafio', () => {
+      showCountdown(label, () => {
         prepareTimerGameScreen();
         startTimer();
         startRound();
       });
     }
 
-    async function respondToChallenge(challengeId, level) {
+    /* ── DESAFIO: RESPONDER (abrir do painel ou notificação) ── */
+    async function respondToChallenge(challengeId) {
+      const snap = await db.collection('challenges').doc(challengeId).get().catch(() => null);
+      if (!snap || !snap.exists) { alert('Desafio não encontrado.'); return; }
+      const data = snap.data();
+      const user = auth.currentUser;
+
       currentChallengeId = challengeId;
-      desafioRole        = 'opponent';
-      currentLevel       = level;
-      document.querySelectorAll('.diff-btn').forEach(b => {
-        b.classList.toggle('selected', parseInt(b.dataset.level) === level);
-      });
-      timerCorrect = 0; timerScore = 0;
-      document.getElementById('skip-btn').disabled = false;
-      document.getElementById('skips-left-lbl').style.display = 'none';
+      currentLevel       = data.level || 1;
+      desafioRole        = data.challenger.uid === user.uid ? 'challenger' : 'opponent';
+
+      /* Determina a rodada a jogar conforme o status do desafio */
+      if (data.status === 'opponent_r1') {
+        challengeRound = 1; challengePokemonList = data.pokemonR1;
+      } else if (data.status === 'challenger_r2') {
+        challengeRound = 2; challengePokemonList = data.pokemonR2;
+      } else if (data.status === 'opponent_r2') {
+        challengeRound = 2; challengePokemonList = data.pokemonR2;
+      } else {
+        alert('Não é sua vez ou o desafio já terminou.'); return;
+      }
+
+      challengePokemonIdx = 0;
+      isChallengeMode = true;
+
+      document.querySelectorAll('.diff-btn').forEach(b =>
+        b.classList.toggle('selected', parseInt(b.dataset.level) === currentLevel));
+
       await ensureMasterList();
-      buildPool();
-      showCountdown('1 minuto · Respondendo', () => {
-        prepareTimerGameScreen();
-        startTimer();
-        startRound();
-      });
+      const oppName = desafioRole === 'challenger' ? data.opponent.username : data.challenger.username;
+      startChallengeRound(`1 min · vs ${oppName} · R${challengeRound}`);
     }
 
+    /* ── DESAFIO: FIM DE RODADA ──────────────────── */
     async function endDesafioRound() {
       endInputs();
       document.querySelector('.hints-section').style.display  = 'none';
       document.querySelector('.answer-section').style.display = 'none';
-      const user = auth.currentUser;
-      const desafioEnd = document.getElementById('desafio-end-section');
-      const badge      = document.getElementById('de-badge');
+      isChallengeMode = false;
 
-      if (desafioRole === 'challenger') {
-        /* Salva score da rodada 1 */
-        await db.collection('challenges').doc(currentChallengeId).update({
-          round1Score: timerScore, status: 'round1_done',
-        }).catch(() => {});
-        badge.className  = 'de-badge wait';
-        badge.textContent = 'Aguardando';
-        document.getElementById('de-title').textContent = `Você fez ${timerScore} pontos!`;
-        document.getElementById('de-sub').textContent   = 'Aguardando o oponente responder...';
-        document.getElementById('de-scores-row').style.display = 'none';
-        desafioEnd.style.display = 'block';
-        /* Escuta mudanças no desafio */
-        listenChallengeResult();
-      } else {
-        /* Oponente finalizou — salva e compara */
-        const docRef = db.collection('challenges').doc(currentChallengeId);
-        const snap   = await docRef.get();
-        const data   = snap.data();
-        const round1 = data.round1Score || 0;
-        const round2 = timerScore;
-        let winner = round2 > round1 ? user.uid : round2 < round1 ? data.challenger.uid : 'draw';
-        await docRef.update({ round2Score: round2, status: 'complete', winner }).catch(() => {});
-        /* Atualiza ranking de desafios */
-        updateChallengeRanking(user.uid, user.displayName, winner === user.uid, winner === 'draw');
-        updateChallengeRanking(data.challenger.uid, data.challenger.username, winner === data.challenger.uid, winner === 'draw');
-        /* Exibe resultado */
+      const user     = auth.currentUser;
+      const docRef   = db.collection('challenges').doc(currentChallengeId);
+      const snap     = await docRef.get();
+      const data     = snap.data();
+      const desafioEnd = document.getElementById('desafio-end-section');
+      const badge    = document.getElementById('de-badge');
+
+      const isChallenger = data.challenger.uid === user.uid;
+      const scoreField   = isChallenger
+        ? (challengeRound === 1 ? 'score_challenger_r1' : 'score_challenger_r2')
+        : (challengeRound === 1 ? 'score_opponent_r1'   : 'score_opponent_r2');
+
+      /* Mapa de transição de status */
+      const nextStatus = {
+        challenger_r1: 'opponent_r1',
+        opponent_r1:   'challenger_r2',
+        challenger_r2: 'opponent_r2',
+        opponent_r2:   'complete',
+      }[data.status] || 'complete';
+
+      const update = { [scoreField]: timerScore, status: nextStatus };
+
+      if (nextStatus === 'complete') {
+        /* Calcula totais e vencedor */
+        const sc1 = isChallenger ? timerScore : (data.score_challenger_r1 || 0);
+        const sc2 = isChallenger ? (data.score_challenger_r2 || 0) : timerScore;
+        const so1 = isChallenger ? (data.score_opponent_r1 || 0) : timerScore;
+        const so2 = isChallenger ? timerScore : timerScore;
+
+        /* opponent is the one finishing round 2 */
+        const challTotal = (data.score_challenger_r1 || 0) + (data.score_challenger_r2 || 0);
+        const oppTotal   = (data.score_opponent_r1   || 0) + timerScore;
+
+        const winner = challTotal > oppTotal ? data.challenger.uid
+                     : oppTotal > challTotal ? data.opponent.uid : 'draw';
+        update.winner          = winner;
+        update.total_challenger = challTotal;
+        update.total_opponent   = oppTotal;
+
+        await docRef.update(update).catch(() => {});
+
         const won  = winner === user.uid;
         const draw = winner === 'draw';
-        badge.className   = 'de-badge ' + (draw ? 'draw' : won ? 'win' : 'lose');
-        badge.textContent = draw ? 'Empate!' : won ? 'Vitória! 🏆' : 'Derrota';
-        document.getElementById('de-title').textContent = data.challenger.username + ' vs você';
-        document.getElementById('de-sub').textContent   = draw ? 'Pontuação igual!' : won ? 'Você ganhou!' : 'Melhor na próxima!';
-        document.getElementById('de-scores-row').style.display = 'flex';
-        document.getElementById('de-opp-score').textContent  = round1;
-        document.getElementById('de-opp-name').textContent   = data.challenger.username;
-        document.getElementById('de-my-score').textContent   = round2;
-        desafioEnd.style.display = 'block';
+        updateChallengeRanking(data.challenger.uid, data.challenger.username,
+          winner === data.challenger.uid, draw);
+        updateChallengeRanking(data.opponent.uid, data.opponent.username,
+          winner === data.opponent.uid, draw);
+
+        showDesafioResult(data, isChallenger ? challTotal : oppTotal,
+          isChallenger ? oppTotal : challTotal,
+          isChallenger ? data.opponent.username : data.challenger.username, won, draw);
+        return;
       }
+
+      await docRef.update(update).catch(() => {});
+
+      /* Notifica o próximo jogador */
+      const notify = {
+        opponent_r1:   { uid: data.opponent.uid,    round: 1, msg: 'Sua vez: Rodada 1' },
+        challenger_r2: { uid: data.challenger.uid,  round: 2, msg: 'Sua vez: Rodada 2' },
+        opponent_r2:   { uid: data.opponent.uid,    round: 2, msg: 'Sua vez: Rodada 2' },
+      }[nextStatus];
+
+      if (notify) {
+        db.collection('users').doc(notify.uid).collection('notifications').add({
+          type: 'challenge_turn', challengeId: currentChallengeId,
+          from: { uid: user.uid, username: user.displayName || user.email.split('@')[0] },
+          level: data.level, round: notify.round, message: notify.msg,
+          read: false,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }).catch(() => {});
+      }
+
+      /* Exibe tela de aguardo */
+      badge.className   = 'de-badge wait';
+      badge.textContent = `R${challengeRound} concluída`;
+      document.getElementById('de-title').textContent = `Rodada ${challengeRound}: ${timerScore} pts`;
+      document.getElementById('de-sub').textContent =
+        nextStatus === 'opponent_r1'   ? 'Aguardando oponente jogar Rodada 1...' :
+        nextStatus === 'challenger_r2' ? 'Rodada 1 completa! Aguardando sua Rodada 2...' :
+        nextStatus === 'opponent_r2'   ? 'Aguardando oponente jogar Rodada 2...' : '...';
+      document.getElementById('de-scores-row').style.display = 'none';
+      desafioEnd.style.display = 'block';
+
+      /* Se for a vez do challenger na R2, escuta o status do desafio */
+      if (nextStatus === 'challenger_r2' && isChallenger) {
+        listenForMyTurn(currentChallengeId, 'challenger_r2');
+      }
+      /* Se o oponente terminou a R1, a notificação vai chegar via onSnapshot das notificações */
     }
 
-    function listenChallengeResult() {
-      if (!currentChallengeId) return;
-      const unsub = db.collection('challenges').doc(currentChallengeId).onSnapshot(snap => {
+    /* ── DESAFIO: ESCUTA PARA JOGAR R2 ──────────── */
+    function listenForMyTurn(challengeId, awaitedStatus) {
+      if (challengeListenUnsub) challengeListenUnsub();
+      challengeListenUnsub = db.collection('challenges').doc(challengeId).onSnapshot(snap => {
         const d = snap.data();
-        if (!d || d.status !== 'complete') return;
-        unsub();
-        const user  = auth.currentUser;
-        const won   = d.winner === user.uid;
-        const draw  = d.winner === 'draw';
-        const badge = document.getElementById('de-badge');
-        badge.className   = 'de-badge ' + (draw ? 'draw' : won ? 'win' : 'lose');
-        badge.textContent = draw ? 'Empate!' : won ? 'Vitória! 🏆' : 'Derrota';
-        document.getElementById('de-title').textContent = 'Resultado Final';
-        document.getElementById('de-sub').textContent   = draw ? 'Pontuação igual!' : won ? 'Você ganhou!' : 'Melhor na próxima!';
-        document.getElementById('de-scores-row').style.display = 'flex';
-        document.getElementById('de-my-score').textContent  = d.round1Score || 0;
-        document.getElementById('de-opp-score').textContent = d.round2Score || 0;
-        document.getElementById('de-opp-name').textContent  = d.opponent.username;
-        updateChallengeRanking(user.uid, user.displayName, won, draw);
+        if (!d) return;
+        if (d.status === 'complete') {
+          if (challengeListenUnsub) { challengeListenUnsub(); challengeListenUnsub = null; }
+          return;
+        }
+        if (d.status === awaitedStatus) {
+          if (challengeListenUnsub) { challengeListenUnsub(); challengeListenUnsub = null; }
+          /* É nossa vez: R2 */
+          document.getElementById('desafio-end-section').style.display = 'none';
+          currentChallengeId   = challengeId;
+          challengeRound       = 2;
+          challengePokemonList = d.pokemonR2;
+          challengePokemonIdx  = 0;
+          isChallengeMode      = true;
+          const isChallenger   = d.challenger.uid === auth.currentUser.uid;
+          const oppName        = isChallenger ? d.opponent.username : d.challenger.username;
+          startChallengeRound(`1 min · vs ${oppName} · R2`);
+        }
       });
+    }
+
+    /* ── DESAFIO: EXIBE RESULTADO FINAL ─────────── */
+    function showDesafioResult(data, myTotal, oppTotal, oppName, won, draw) {
+      const badge = document.getElementById('de-badge');
+      badge.className   = 'de-badge ' + (draw ? 'draw' : won ? 'win' : 'lose');
+      badge.textContent = draw ? 'Empate!' : won ? 'Vitória! 🏆' : 'Derrota';
+      document.getElementById('de-title').textContent = 'Resultado Final — 2 Rodadas';
+      document.getElementById('de-sub').textContent   = draw
+        ? 'Pontuação igual nas duas rodadas!'
+        : (won ? 'Você ganhou! 🎉' : 'Melhor na próxima!');
+      document.getElementById('de-scores-row').style.display = 'flex';
+      document.getElementById('de-my-score').textContent   = myTotal;
+      document.getElementById('de-opp-score').textContent  = oppTotal;
+      document.getElementById('de-opp-name').textContent   = oppName;
+      document.getElementById('desafio-end-section').style.display = 'block';
     }
 
     async function updateChallengeRanking(uid, username, won, draw) {
@@ -2178,7 +2324,8 @@
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
                 const n = change.doc.data();
-                if (n.type === 'challenge') showNotifToast(n, change.doc.id);
+                if (n.type === 'challenge' || n.type === 'challenge_turn')
+                  showNotifToast(n, change.doc.id);
               }
             });
           } else {
@@ -2195,7 +2342,10 @@
       sfxAccepter.play().catch(() => {});
       const toast = document.createElement('div');
       toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--surface);border:1px solid rgba(248,88,136,.4);border-radius:14px;padding:.85rem 1.1rem;font-family:Rajdhani,sans-serif;font-size:.88rem;font-weight:600;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.5);max-width:280px;animation:hint-in .3s ease;';
-      toast.innerHTML = `<div style="font-family:Orbitron,monospace;font-size:.46rem;letter-spacing:.16em;color:var(--p1);margin-bottom:.35rem">⚔ DESAFIO RECEBIDO</div><div>${notif.from.username} te desafiou!</div>`;
+      const toastMsg = notif.type === 'challenge_turn'
+        ? `${notif.from.username} — ${notif.message || 'Sua vez!'}`
+        : `${notif.from.username} te desafiou!`;
+      toast.innerHTML = `<div style="font-family:Orbitron,monospace;font-size:.46rem;letter-spacing:.16em;color:var(--p1);margin-bottom:.35rem">⚔ DESAFIO</div><div>${toastMsg}</div>`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 5000);
       /* Marca como lida */
@@ -2221,6 +2371,16 @@
         }
         /* Inicia listener APÓS o dot estar no DOM */
         startNotifListener(user.uid);
+        /* Se veio da index com link de desafio, abre automaticamente */
+        const hash = window.location.hash;
+        if (hash.startsWith('#desafio-')) {
+          const cid = hash.replace('#desafio-', '');
+          if (cid) {
+            window.location.hash = '';
+            switchMode('desafio');
+            setTimeout(() => respondToChallenge(cid), 400);
+          }
+        }
       } else {
         if (notifUnsubscribe) { notifUnsubscribe(); notifUnsubscribe = null; }
       }
