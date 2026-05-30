@@ -342,19 +342,22 @@
         }
       }
 
-      // Histórico de Desafios
+      // Histórico de Desafios (sem orderBy para evitar índice composto)
       var lvLabels = { 1:'Normal', 2:'Difícil', 3:'Extremo' };
       var chListEl = document.getElementById('challenge-history-list');
       try {
         var [snapChall, snapOpp] = await Promise.all([
-          db.collection('challenges').where('challenger.uid','==',user.uid).orderBy('createdAt','desc').limit(10).get(),
-          db.collection('challenges').where('opponent.uid','==',user.uid).orderBy('createdAt','desc').limit(10).get(),
+          db.collection('challenges').where('challenger.uid','==',user.uid).limit(20).get().catch(function(){return null;}),
+          db.collection('challenges').where('opponent.uid','==',user.uid).limit(20).get().catch(function(){return null;}),
         ]);
         var chDocs = {};
-        snapChall.forEach(function(d){ chDocs[d.id] = d; });
-        snapOpp.forEach(function(d){   chDocs[d.id] = d; });
+        if (snapChall) snapChall.forEach(function(d){ chDocs[d.id] = d; });
+        if (snapOpp)   snapOpp.forEach(function(d){   chDocs[d.id] = d; });
+        // Ordena client-side por data (desc)
         var allCh = Object.values(chDocs).sort(function(a,b){
-          return (b.data().createdAt?.seconds||0) - (a.data().createdAt?.seconds||0);
+          var ta = a.data().createdAt ? a.data().createdAt.seconds : 0;
+          var tb = b.data().createdAt ? b.data().createdAt.seconds : 0;
+          return tb - ta;
         }).slice(0, 15);
         if (allCh.length > 0) {
           chListEl.innerHTML = '';
@@ -362,9 +365,14 @@
             var ch = doc.data();
             var isChallenger = ch.challenger.uid === user.uid;
             var opp      = isChallenger ? ch.opponent.username : ch.challenger.username;
-            var myScore  = isChallenger ? (ch.round1Score ?? '—') : (ch.round2Score ?? '—');
-            var oppScore = isChallenger ? (ch.round2Score ?? '—') : (ch.round1Score ?? '—');
-            var resultCls = 'pend', resultLbl = 'Aguard.';
+            // Usa totais do novo sistema ou pontuações antigas como fallback
+            var myScore  = ch.status === 'complete'
+              ? (isChallenger ? (ch.total_challenger ?? ch.round1Score ?? '—') : (ch.total_opponent ?? ch.round2Score ?? '—'))
+              : '—';
+            var oppScore = ch.status === 'complete'
+              ? (isChallenger ? (ch.total_opponent ?? ch.round2Score ?? '—') : (ch.total_challenger ?? ch.round1Score ?? '—'))
+              : '—';
+            var resultCls = 'pend', resultLbl = 'Em andamento';
             if (ch.status === 'complete') {
               if (ch.winner === user.uid)   { resultCls = 'win';  resultLbl = 'Vitória'; }
               else if (ch.winner === 'draw'){ resultCls = 'draw'; resultLbl = 'Empate';  }
