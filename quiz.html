@@ -184,6 +184,10 @@
       object-fit: contain; display: block; position: relative; z-index: 1;
       /* filter controlled entirely via inline style */
       transition: filter 0.75s ease, opacity .3s ease;
+      /* impede drag que revelaria a imagem sem o filtro */
+      -webkit-user-drag: none;
+      user-select: none;
+      pointer-events: none;
     }
     /* Revealed: override any inline filter */
     .mystery-sprite.revealed { filter: none !important; transform: none !important; }
@@ -515,8 +519,13 @@
     .timer-stat-val.pts { color: #a855f7; }
     .timer-stat-lbl { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: .15em; color: var(--muted); margin-top: .1rem; }
     .skip-row { display: flex; justify-content: center; gap: 1rem; align-items: center; }
-    #skip-btn { background: transparent; border: none; color: var(--muted); font-family: 'Orbitron', monospace; font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; padding: .3rem .6rem; transition: color .18s; }
-    #skip-btn:hover:not(:disabled) { color: #F8D030; }
+    #skip-btn {
+      background: rgba(248,208,48,.08); border: 1px solid rgba(248,208,48,.35);
+      color: #F8D030; font-family: 'Orbitron', monospace; font-weight: 700;
+      font-size: .62rem; letter-spacing: .16em; text-transform: uppercase;
+      cursor: pointer; padding: .62rem 1.8rem; border-radius: 50px; transition: all .18s;
+    }
+    #skip-btn:hover:not(:disabled) { background: rgba(248,208,48,.18); border-color: rgba(248,208,48,.7); box-shadow: 0 0 16px rgba(248,208,48,.22); }
     #skip-btn:disabled { opacity: .22; cursor: not-allowed; }
     .skips-left { font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .14em; color: var(--muted); }
 
@@ -802,7 +811,7 @@
         <!-- Nível 1 & 2 -->
         <div class="mystery-single" id="mystery-single">
           <div class="mystery-sprite-wrap">
-            <img class="mystery-sprite" id="mystery-sprite" src="" alt="???">
+            <img class="mystery-sprite" id="mystery-sprite" src="" alt="???" draggable="false">
             <div class="mystery-glow"></div>
           </div>
           <div class="mystery-label" id="mystery-label">???</div>
@@ -811,8 +820,8 @@
         <!-- Nível 3: sobrepostos -->
         <div class="mystery-duo" id="mystery-duo">
           <div class="duo-container">
-            <img class="mystery-sprite sprite-a" id="sprite-a" src="" alt="???">
-            <img class="mystery-sprite sprite-b" id="sprite-b" src="" alt="???">
+            <img class="mystery-sprite sprite-a" id="sprite-a" src="" alt="???" draggable="false">
+            <img class="mystery-sprite sprite-b" id="sprite-b" src="" alt="???" draggable="false">
           </div>
           <div class="duo-labels">
             <div class="duo-label a" id="label-a">???</div>
@@ -1825,8 +1834,8 @@
     sfxCountdown2.volume = 0.6;
 
     function showCountdown(label, callback) {
-      /* Toca Countdown2.mp3 apenas para desafios */
-      if (label.includes('Desafio') || label.includes('Respondendo')) {
+      /* Toca Countdown2.mp3 para qualquer rodada de desafio */
+      if (label.includes('Desafio') || label.includes('Respondendo') || label.includes('· R') || label.includes('vs ')) {
         sfxCountdown2.currentTime = 0;
         sfxCountdown2.play().catch(() => {});
       }
@@ -2100,6 +2109,7 @@
       challengePokemonIdx = 0;
       document.getElementById('skip-btn').disabled = false;
       document.getElementById('skips-left-lbl').style.display = 'none';
+      buildPool(); // necessário para o autocomplete funcionar no desafio
       showCountdown(label, () => {
         prepareTimerGameScreen();
         startTimer();
@@ -2194,6 +2204,25 @@
           winner === data.challenger.uid, draw);
         updateChallengeRanking(data.opponent.uid, data.opponent.username,
           winner === data.opponent.uid, draw);
+
+        /* Notifica ambos os jogadores com o resultado final */
+        const me = { uid: user.uid, username: user.displayName || user.email.split('@')[0] };
+        const notifResult = (toUid, myScore, opScore, iWon) => ({
+          type: 'challenge_result',
+          challengeId: currentChallengeId,
+          from: me, level: data.level,
+          myScore, opScore,
+          result: draw ? 'draw' : (iWon ? 'win' : 'lose'),
+          message: draw ? 'Empate no desafio!' : (iWon ? 'Você venceu o desafio! 🏆' : 'Você perdeu o desafio.'),
+          read: false,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        db.collection('users').doc(data.challenger.uid).collection('notifications')
+          .add(notifResult(data.challenger.uid, challTotal, oppTotal, winner === data.challenger.uid))
+          .catch(() => {});
+        db.collection('users').doc(data.opponent.uid).collection('notifications')
+          .add(notifResult(data.opponent.uid, oppTotal, challTotal, winner === data.opponent.uid))
+          .catch(() => {});
 
         showDesafioResult(data, isChallenger ? challTotal : oppTotal,
           isChallenger ? oppTotal : challTotal,
@@ -2324,7 +2353,7 @@
             snap.docChanges().forEach(change => {
               if (change.type === 'added') {
                 const n = change.doc.data();
-                if (n.type === 'challenge' || n.type === 'challenge_turn')
+                if (n.type === 'challenge' || n.type === 'challenge_turn' || n.type === 'challenge_result')
                   showNotifToast(n, change.doc.id);
               }
             });
@@ -2342,10 +2371,16 @@
       sfxAccepter.play().catch(() => {});
       const toast = document.createElement('div');
       toast.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--surface);border:1px solid rgba(248,88,136,.4);border-radius:14px;padding:.85rem 1.1rem;font-family:Rajdhani,sans-serif;font-size:.88rem;font-weight:600;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.5);max-width:280px;animation:hint-in .3s ease;';
+      const isResult = notif.type === 'challenge_result';
       const toastMsg = notif.type === 'challenge_turn'
         ? `${notif.from.username} — ${notif.message || 'Sua vez!'}`
-        : `${notif.from.username} te desafiou!`;
-      toast.innerHTML = `<div style="font-family:Orbitron,monospace;font-size:.46rem;letter-spacing:.16em;color:var(--p1);margin-bottom:.35rem">⚔ DESAFIO</div><div>${toastMsg}</div>`;
+        : isResult
+          ? notif.message || 'Desafio finalizado!'
+          : `${notif.from.username} te desafiou!`;
+      const toastColor = isResult
+        ? (notif.result === 'win' ? '#4ade80' : notif.result === 'draw' ? '#F8D030' : '#f87171')
+        : 'var(--p1)';
+      toast.innerHTML = `<div style="font-family:Orbitron,monospace;font-size:.46rem;letter-spacing:.16em;color:${toastColor};margin-bottom:.35rem">⚔ DESAFIO${isResult ? ' — RESULTADO' : ''}</div><div>${toastMsg}</div>`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 5000);
       /* Marca como lida */

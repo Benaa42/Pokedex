@@ -1653,12 +1653,17 @@
           item.className = 'notif-item';
 
           var icon   = '⚔';
+          var isResult = n.type === 'challenge_result';
           var lvLbl  = n.level ? ({ 1:'Normal', 2:'Difícil', 3:'Extremo' }[n.level] || '') : '';
           var rndLbl = n.round ? ' · R' + n.round : '';
-          var title  = n.type === 'challenge_turn'
-            ? n.from.username + ' — ' + (n.message || 'Sua vez!')
-            : n.from.username + ' te desafiou!';
-          var sub    = lvLbl + rndLbl + ' · 1 minuto';
+          var title  = isResult
+            ? (n.message || 'Desafio finalizado!')
+            : n.type === 'challenge_turn'
+              ? n.from.username + ' — ' + (n.message || 'Sua vez!')
+              : n.from.username + ' te desafiou!';
+          var sub = isResult
+            ? 'Você: ' + (n.myScore || 0) + ' pts · Oponente: ' + (n.opScore || 0) + ' pts'
+            : lvLbl + rndLbl + ' · 1 minuto';
 
           item.innerHTML =
             '<div class="notif-icon">' + icon + '</div>' +
