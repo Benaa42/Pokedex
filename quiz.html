@@ -1179,12 +1179,23 @@
 
     /* ── INICIAR ─────────────────────────────────── */
     startBtn.addEventListener('click', async () => {
+      /* Garante modo correto — pode ter ficado como 'relogio'/'desafio' */
+      currentMode     = 'classico';
+      isChallengeMode = false;
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
       startBtn.disabled = true;
       startBtn.textContent = 'Carregando...';
       await ensureMasterList();
       buildPool();
       document.getElementById('setup-screen').style.display = 'none';
       document.getElementById('game-screen').style.display  = 'block';
+      /* Garante visibilidade dos elementos do modo clássico */
+      document.getElementById('score-row').style.display  = '';
+      document.getElementById('timer-wrap').style.display = 'none';
+      document.querySelector('.hints-section').style.display  = '';
+      document.querySelector('.answer-section').style.display = '';
+      document.getElementById('give-up-btn').style.display = '';
+      document.getElementById('skip-btn').style.display    = 'none';
 
       /* Mostrar layout correto */
       if (currentLevel === 3) {
@@ -2451,6 +2462,19 @@
       document.getElementById('val-round').textContent  = 100;
       startBtn.textContent = '▶ INICIAR JOGO';
       startBtn.disabled = false;
+      /* Reseta estado de modo para evitar que currentMode contaminado
+         bloqueie o avanço de Pokémon no próximo jogo clássico */
+      isChallengeMode = false;
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      /* Restaura elementos que o modo timer/desafio pode ter ocultado */
+      document.getElementById('score-row').style.display  = '';
+      document.getElementById('timer-wrap').style.display = 'none';
+      document.querySelector('.hints-section').style.display  = '';
+      document.querySelector('.answer-section').style.display = '';
+      document.getElementById('give-up-btn').style.display = '';
+      document.getElementById('skip-btn').style.display    = 'none';
+      document.getElementById('timer-end-section').style.display   = 'none';
+      document.getElementById('desafio-end-section').style.display = 'none';
     });
 
   })();
