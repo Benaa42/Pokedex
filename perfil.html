@@ -185,6 +185,47 @@
     .ch-meta { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: .14em; color: var(--muted); margin-top: .08rem; }
     .ch-scores { font-family: 'Orbitron', monospace; font-weight: 900; font-size: .88rem; color: #F8D030; flex-shrink: 0; text-align: right; }
 
+    /* ── ABAS DO PERFIL ─────────────────────────── */
+    .profile-tabs { display: flex; gap: .38rem; background: var(--surface-2); border-radius: 50px; padding: .28rem; margin-bottom: 1.25rem; }
+    .profile-tab { flex: 1; background: transparent; border: none; color: var(--muted); font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .12em; text-transform: uppercase; padding: .58rem .4rem; border-radius: 50px; cursor: pointer; transition: all .2s; }
+    .profile-tab:not(.active):hover { color: var(--text); }
+    .profile-tab.active { background: linear-gradient(130deg, rgba(248,208,48,.2), rgba(248,88,136,.15)); color: #F8D030; box-shadow: 0 0 12px rgba(248,208,48,.12); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── DESAFIOS ATIVOS ─────────────────────────── */
+    .active-ch-item {
+      display: flex; align-items: center; gap: .85rem;
+      padding: .88rem 1.25rem; border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    .active-ch-item:last-child { border-bottom: none; }
+    .active-ch-item:hover { background: rgba(255,255,255,.02); }
+    .ach-turn {
+      font-family: 'Orbitron', monospace; font-weight: 900; font-size: .5rem;
+      letter-spacing: .1em; padding: .22rem .55rem; border-radius: 50px; flex-shrink: 0; white-space: nowrap;
+    }
+    .ach-turn.mine  { background: rgba(74,222,128,.15); color: #4ade80; }
+    .ach-turn.theirs { background: rgba(104,144,240,.12); color: #6890F0; }
+    .ach-info { flex: 1; min-width: 0; }
+    .ach-opp  { font-size: .9rem; font-weight: 700; color: var(--text); }
+    .ach-meta { font-family: 'Orbitron', monospace; font-size: .42rem; letter-spacing: .12em; color: var(--muted); margin-top: .08rem; }
+    .ach-actions { display: flex; gap: .45rem; flex-shrink: 0; }
+    .ach-play-btn {
+      background: linear-gradient(130deg,rgba(74,222,128,.2),rgba(112,56,248,.15));
+      border: 1px solid rgba(74,222,128,.4); color: #4ade80;
+      font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .13em;
+      padding: .4rem .9rem; border-radius: 50px; cursor: pointer; transition: all .18s;
+      text-decoration: none; display: inline-flex; align-items: center;
+    }
+    .ach-play-btn:hover { border-color: rgba(74,222,128,.7); box-shadow: 0 0 14px rgba(74,222,128,.18); }
+    .ach-cancel-btn {
+      background: transparent; border: 1px solid rgba(248,80,80,.28); color: rgba(248,80,80,.6);
+      font-family: 'Orbitron', monospace; font-size: .48rem; letter-spacing: .1em;
+      padding: .4rem .8rem; border-radius: 50px; cursor: pointer; transition: all .18s;
+    }
+    .ach-cancel-btn:hover { border-color: #f87171; color: #f87171; }
+
     /* ── MOBILE ─────────────────────────────────── */
     @media (max-width: 640px) {
       main { padding: 1rem; }
@@ -227,30 +268,49 @@
         <button id="logout-btn">↩ Sair</button>
       </div>
 
-      <div class="stats-grid">
-        <div class="stat-box"><div class="stat-lbl">Partidas</div><div class="stat-val" id="sv-games">0</div></div>
-        <div class="stat-box"><div class="stat-lbl">Total pts</div><div class="stat-val" id="sv-total">0</div></div>
-        <div class="stat-box"><div class="stat-lbl">Recorde</div><div class="stat-val" id="sv-best">0</div></div>
-        <div class="stat-box"><div class="stat-lbl">Média</div><div class="stat-val" id="sv-avg">0</div></div>
+      <!-- Abas -->
+      <div class="profile-tabs">
+        <button class="profile-tab active" data-tab="resumo">📊 Resumo</button>
+        <button class="profile-tab" data-tab="desafios-ativos">⚔ Desafios Ativos</button>
+        <button class="profile-tab" data-tab="historico">📋 Histórico</button>
       </div>
 
-      <!-- Stats de Desafios -->
-      <div class="section-label" style="margin-top:.85rem">Desafios</div>
-      <div class="stats-grid" id="challenge-stats-grid" style="display:none">
-        <div class="stat-box"><div class="stat-lbl">Vitórias</div><div class="stat-val" id="sv-wins" style="color:#4ade80">0</div></div>
-        <div class="stat-box"><div class="stat-lbl">Derrotas</div><div class="stat-val" id="sv-losses" style="color:#f87171">0</div></div>
-        <div class="stat-box"><div class="stat-lbl">Empates</div><div class="stat-val" id="sv-draws" style="color:#F8D030">0</div></div>
-      </div>
-      <div id="challenge-stats-empty" class="hist-empty" style="padding:1rem">Nenhum desafio disputado ainda</div>
+      <!-- Aba: Resumo -->
+      <div class="tab-panel active" id="tab-resumo">
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-lbl">Partidas</div><div class="stat-val" id="sv-games">0</div></div>
+          <div class="stat-box"><div class="stat-lbl">Total pts</div><div class="stat-val" id="sv-total">0</div></div>
+          <div class="stat-box"><div class="stat-lbl">Recorde</div><div class="stat-val" id="sv-best">0</div></div>
+          <div class="stat-box"><div class="stat-lbl">Média</div><div class="stat-val" id="sv-avg">0</div></div>
+        </div>
 
-      <div class="section-label" style="margin-top:1rem">Histórico de desafios</div>
-      <div class="history-list" id="challenge-history-list">
-        <div class="hist-empty">Nenhum desafio registrado ainda</div>
+        <div class="section-label" style="margin-top:.85rem">Desafios</div>
+        <div class="stats-grid" id="challenge-stats-grid" style="display:none">
+          <div class="stat-box"><div class="stat-lbl">Vitórias</div><div class="stat-val" id="sv-wins" style="color:#4ade80">0</div></div>
+          <div class="stat-box"><div class="stat-lbl">Derrotas</div><div class="stat-val" id="sv-losses" style="color:#f87171">0</div></div>
+          <div class="stat-box"><div class="stat-lbl">Empates</div><div class="stat-val" id="sv-draws" style="color:#F8D030">0</div></div>
+        </div>
+        <div id="challenge-stats-empty" class="hist-empty" style="padding:1rem">Nenhum desafio disputado ainda</div>
       </div>
 
-      <div class="section-label" style="margin-top:1rem">Partidas do quiz clássico</div>
-      <div class="history-list" id="history-list">
-        <div class="hist-empty">Nenhuma partida registrada ainda</div>
+      <!-- Aba: Desafios Ativos -->
+      <div class="tab-panel" id="tab-desafios-ativos">
+        <div class="history-list" id="active-challenges-list">
+          <div class="hist-empty">Nenhum desafio ativo</div>
+        </div>
+      </div>
+
+      <!-- Aba: Histórico -->
+      <div class="tab-panel" id="tab-historico">
+        <div class="section-label">Histórico de desafios</div>
+        <div class="history-list" id="challenge-history-list">
+          <div class="hist-empty">Nenhum desafio registrado ainda</div>
+        </div>
+
+        <div class="section-label" style="margin-top:1rem">Partidas do quiz clássico</div>
+        <div class="history-list" id="history-list">
+          <div class="hist-empty">Nenhuma partida registrada ainda</div>
+        </div>
       </div>
 
     </div>
@@ -391,12 +451,105 @@
         }
       } catch(e) {}
 
+      // Desafios Ativos
+      await loadActiveChallenges(user.uid, lvLabels);
+
       // Logout
       document.getElementById('logout-btn').addEventListener('click', async function() {
         await auth.signOut();
         window.location.href = 'index.html';
       });
+
+      // Tabs
+      document.querySelectorAll('.profile-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.profile-tab').forEach(function(b){ b.classList.remove('active'); });
+          document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+          btn.classList.add('active');
+          var panel = document.getElementById('tab-' + btn.dataset.tab);
+          if (panel) panel.classList.add('active');
+        });
+      });
     });
+
+    async function loadActiveChallenges(uid, lvLabels) {
+      var list = document.getElementById('active-challenges-list');
+      var activeStatuses = ['challenger_r1','opponent_r1','challenger_r2','opponent_r2'];
+
+      try {
+        var [snapChall, snapOpp] = await Promise.all([
+          db.collection('challenges').where('challenger.uid','==',uid).get().catch(function(){return null;}),
+          db.collection('challenges').where('opponent.uid','==',uid).get().catch(function(){return null;}),
+        ]);
+
+        var active = {};
+        if (snapChall) snapChall.forEach(function(d){
+          if (activeStatuses.indexOf(d.data().status) >= 0) active[d.id] = d;
+        });
+        if (snapOpp) snapOpp.forEach(function(d){
+          if (activeStatuses.indexOf(d.data().status) >= 0) active[d.id] = d;
+        });
+
+        var docs = Object.values(active).sort(function(a, b) {
+          return (b.data().createdAt?.seconds||0) - (a.data().createdAt?.seconds||0);
+        });
+
+        if (!docs.length) { list.innerHTML = '<div class="hist-empty">Nenhum desafio ativo</div>'; return; }
+
+        list.innerHTML = '';
+        var statusLabel = {
+          challenger_r1: 'Sua vez — R1', opponent_r1: 'Aguardando R1',
+          challenger_r2: 'Sua vez — R2', opponent_r2: 'Aguardando R2',
+        };
+        var myTurn = { challenger_r1: true, challenger_r2: true, opponent_r1: false, opponent_r2: false };
+
+        docs.forEach(function(doc) {
+          var ch = doc.data();
+          var isChallenger = ch.challenger.uid === uid;
+          var opp = isChallenger ? ch.opponent.username : ch.challenger.username;
+
+          // Determina se é a vez deste usuário
+          var statusKey = ch.status;
+          var iMyTurn = isChallenger ? myTurn[statusKey] : !myTurn[statusKey];
+          var turnText = iMyTurn ? statusLabel[statusKey] : statusLabel[statusKey];
+          var turnClass = iMyTurn ? 'mine' : 'theirs';
+
+          var lv = lvLabels[ch.level] || '';
+          var date = ch.createdAt ? ch.createdAt.toDate().toLocaleDateString('pt-BR') : '—';
+
+          var item = document.createElement('div');
+          item.className = 'active-ch-item';
+          item.innerHTML =
+            '<div class="ach-turn ' + turnClass + '">' + (statusLabel[statusKey] || ch.status) + '</div>' +
+            '<div class="ach-info">' +
+              '<div class="ach-opp">vs ' + opp + '</div>' +
+              '<div class="ach-meta">' + lv + ' · ' + date + '</div>' +
+            '</div>' +
+            '<div class="ach-actions">' +
+              (iMyTurn ? '<a class="ach-play-btn" href="quiz.html#desafio-' + doc.id + '">▶ Jogar</a>' : '') +
+              '<button class="ach-cancel-btn" data-id="' + doc.id + '">Cancelar</button>' +
+            '</div>';
+
+          list.appendChild(item);
+        });
+
+        // Listeners dos botões de cancelar
+        list.querySelectorAll('.ach-cancel-btn').forEach(function(btn) {
+          btn.addEventListener('click', async function() {
+            if (!confirm('Cancelar este desafio?')) return;
+            var id = btn.dataset.id;
+            btn.disabled = true; btn.textContent = '...';
+            await db.collection('challenges').doc(id).update({ status: 'cancelled' }).catch(function(){});
+            btn.closest('.active-ch-item').remove();
+            if (!list.querySelector('.active-ch-item')) {
+              list.innerHTML = '<div class="hist-empty">Nenhum desafio ativo</div>';
+            }
+          });
+        });
+      } catch(e) {
+        list.innerHTML = '<div class="hist-empty">Erro ao carregar desafios</div>';
+      }
+    }
   </script>
 </body>
 </html>
